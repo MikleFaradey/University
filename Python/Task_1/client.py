@@ -61,7 +61,7 @@ def run_tests():
     log.append(str(status) + " " + reason)
     log.append(response)
 
-    with open("test_results.txt", "w", encoding="utf-8") as file:
+    with open("test.txt", "w", encoding="utf-8") as file:
         file.write("\n".join(log))
 
     print("Tests completed. Results: test.txt")
