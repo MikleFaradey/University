@@ -56,7 +56,7 @@ def run_tests():
     log.append("")
 
     status, reason, response = request("GET", "/users")
-    log.append("Server check after connection interruption")
+    log.append("Проверка работы сервера после разрыва соединения с клиентом")
     log.append("GET /users")
     log.append(str(status) + " " + reason)
     log.append(response)
