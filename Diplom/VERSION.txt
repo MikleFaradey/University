@@ -1,0 +1,21 @@
+Interchange v6.3.16 Final Stability
+
+Release policy:
+- Python 3.7+
+- fixed dataset/live inference window: 1 second
+- canonical live/training feature schema: 28 features
+- feature-frozen for dataset collection unless a bug or new specification appears
+
+Changes in v6.3.16:
+- experiment baseline socket messages are UI/history-silent while preserving network traffic;
+- experiment baseline uploads are authenticated but do not persist transfer/chat records;
+- Qt contact/chat updates are debounced and duplicate history renders are removed;
+- history sync writes are batched into one SQLite transaction;
+- transfer progress events are rate-limited;
+- presence/history/task refresh storms are suppressed during synthetic tests;
+- server presence broadcasts are coalesced during intentional reconnect storms;
+- FREQUENT_RECONNECT honors 0.1-second intervals and uses a 50 ms experiment reconnect backoff;
+- current traffic-test phase is shown in the client top bar;
+- dataset_v1 example is frozen at reconnect=0.1 s, request-rate=30/s, small-transfer=15/s x 32 B;
+- small-transfer payload lower bound now allows the configured 32-byte payload;
+- all v6.3.15 Windows icon packaging fixes and Random Forest tooling remain included.

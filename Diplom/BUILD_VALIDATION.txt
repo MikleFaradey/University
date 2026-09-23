@@ -1,0 +1,20 @@
+Interchange v6.3.16 validation
+
+Validated in this build environment:
+- smoke/regression suite passes, including GUI-storm and batched-cache regressions;
+- all Python sources compile and satisfy the project's Python 3.7 syntax policy;
+- quiet experiment messages/uploads are wired end-to-end without chat/transfer persistence;
+- contact/chat rebuilds are debounced and duplicate history renders are absent;
+- experiment reconnect delay and 0.1-second reconnect parameter are enforced in source/tests;
+- fixed one-second/28-feature dataset and live inference contract is unchanged;
+- dataset_v1 tuned scenario defaults are regression-locked (0.1 s / 30 req/s / 15 x 32 B);
+- a synthetic multiclass Random Forest was trained, saved, and reloaded through production ModelManager;
+- Windows PyInstaller resource self-test wiring is retained;
+- Linux client DEB builds successfully as interchange-client_6.3.16_all.deb;
+- shell installer scripts pass bash syntax checks.
+
+Not physically validated here:
+- executing the frozen Windows EXE on a real Windows host;
+- compiling the final Windows Inno Setup installer on Windows;
+- macOS PKG runtime launch;
+- real tcpdump/dumpcap/Npcap traffic capture on target operating systems.

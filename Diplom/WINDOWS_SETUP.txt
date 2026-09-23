@@ -1,0 +1,134 @@
+INTERCHANGE - WINDOWS QUICK START
+=================================
+
+The same Python source is used on Linux, Windows and macOS.
+
+WINDOWS CLIENT
+--------------
+
+1. Install Python 3.7 or newer.
+2. Open the client folder.
+3. Run:
+
+   install_windows.bat
+
+4. Start the client:
+
+   run_client.bat
+
+On first start, enter:
+- Server IP / host
+- User ID
+- Download folder
+- HTTP and socket ports
+
+
+WINDOWS SERVER + ADMIN
+----------------------
+
+1. Install Python 3.7 or newer.
+2. Install Wireshark with Npcap.
+   Interchange uses Wireshark's dumpcap.exe for PCAP capture.
+3. Open the server folder.
+4. Run:
+
+   install_windows.bat
+
+5. Start the server:
+
+   run_server.bat
+
+6. If Windows Firewall asks for network access, allow Private networks.
+7. In a second window start:
+
+   run_admin.bat
+
+Server settings:
+
+   run_server_settings.bat
+
+Capture diagnostics:
+
+   run_capture_check.bat
+
+
+WINDOWS PCAP CAPTURE
+--------------------
+
+The Windows capture backend is:
+
+   Wireshark dumpcap + Npcap
+
+Interchange searches for dumpcap.exe in PATH and common Wireshark install
+locations under Program Files / Program Files (x86) / LocalAppData.
+
+Capture interface can stay:
+
+   auto
+
+Interchange tries to detect the Windows adapter used to reach the selected
+client. If the machine has several adapters and automatic selection is
+ambiguous:
+
+1. Run run_capture_check.bat.
+2. Note the interface number, for example:
+
+   4: \Device\NPF_{...} (Ethernet)
+
+3. Open Server settings.
+4. Put:
+
+   4
+
+   into Capture interface.
+
+
+WINDOWS PARSER
+--------------
+
+Open the parser folder and run once:
+
+   install_windows.bat
+
+One experiment:
+
+   run_parser.bat --pcap C:\path\run_000001_....pcap --output dataset.csv
+
+Whole PCAP directory:
+
+   run_parser.bat --input-dir C:\path\pcap --output dataset.csv
+
+
+LINUX / ASTRA
+-------------
+
+Existing .sh launchers are retained:
+
+   client/run_client.sh
+   server/run_server.sh
+   server/run_admin.sh
+   parser/run_parser.sh
+
+Linux tcpdump capability setup from v6.0.9 is unchanged.
+
+
+MACOS
+-----
+
+The .sh launchers are retained.
+dumpcap is preferred when installed. tcpdump can also be detected.
+macOS packet-capture permissions may need to be configured by the local
+administrator / Wireshark installation.
+
+
+EXPERIMENT LOGIC
+----------------
+
+v6.1.0 does NOT change the tested experiment behavior from v6.0.10:
+
+- NORMAL baseline
+- FREQUENT_RECONNECT
+- HIGH_REQUEST_RATE over persistent HTTP/TCP
+- HIGH_FREQUENCY_SMALL_TRANSFERS from SERVER to CLIENT
+- server-authoritative experiment timing
+- project-fixed 1-second parser/dataset windows

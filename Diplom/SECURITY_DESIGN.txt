@@ -1,0 +1,124 @@
+INTERCHANGE V6.3.0 SECURITY DESIGN
+
+1. SECURITY GOALS
+
+Interchange uses a fixed server address and DHCP-capable clients. Client IP
+addresses are not authentication credentials. A client must demonstrate both
+possession of its hidden device token and knowledge of the user password.
+
+2. CLIENT-SIDE STORED DATA
+
+The client configuration stores the server address, display name, internal
+user ID, hidden 15-character alphanumeric device token, download directory and
+ports. The password is never written to client.ini or the local cache. On
+POSIX systems client.ini is restricted to mode 0600 when possible. Windows
+uses the normal per-user profile ACL inherited by the configuration file.
+
+3. SERVER-SIDE STORED DATA
+
+The server database stores a non-secret token identifier, a random password
+salt, PBKDF2 iteration count, a public password verifier, a public token
+verifier, authorization status, last IP and timestamps. The raw token and raw
+password are never stored in the server database.
+
+4. REGISTRATION
+
+The client generates the token with Python secrets.choice using A-Z, a-z and
+0-9. The token length is 15 characters. The client creates a random 16-byte
+password salt. It derives a password proof secret from a domain-separated
+combination of password and device token with PBKDF2-HMAC-SHA256 using 250000
+iterations. A separate token proof secret is derived with SHA-256. The client
+converts both secrets into public modular verifiers. Only the public verifiers,
+salt, KDF parameters, token identifier and display name are sent to the
+server. The raw token and password never leave the client. The new database
+record is created as PENDING. Admin must explicitly approve it.
+
+5. LOGIN CHALLENGE-RESPONSE
+
+For every sign-in the client creates fresh random private values for an
+ephemeral Diffie-Hellman exchange and for two Schnorr-style proof commitments.
+The server creates a fresh ephemeral Diffie-Hellman private value and a fresh
+random challenge. The challenge transcript binds the client token identifier,
+internal user ID, both Diffie-Hellman public values, both proof commitments,
+the challenge, password salt and KDF parameters.
+
+The client recomputes its password+token proof secret from the password entered
+for this application launch and the locally stored device token. It also
+recomputes the token proof secret. The client returns two challenge responses.
+The server verifies those responses against the stored public verifiers.
+
+Both sides independently derive the same ephemeral Diffie-Hellman shared
+secret. A session key is derived from that shared secret and the transcript
+hash. The client sends an HMAC proof bound to the transcript and challenge
+responses. The server verifies the HMAC and sends its own HMAC key-confirmation
+proof. The client verifies the server proof before accepting the session.
+
+6. REPLAY PROTECTION
+
+Each login uses fresh client commitments, a fresh server challenge and fresh
+Diffie-Hellman private values. A proof captured from an earlier login does not
+validate against a later challenge. Failed authentication attempts are rate
+limited per token identifier and source IP. Five failures inside the configured
+window cause a temporary 30-second lock for that source identity pair.
+
+7. HTTP SESSION AUTHENTICATION
+
+After successful sign-in the server creates a random 24-byte session ID and
+keeps the derived session key only in server memory. The client keeps the same
+session key only in process memory. Each authenticated HTTP request contains a
+new 16-byte request nonce and an HMAC-SHA256 over the protocol version, method,
+path, user ID, nonce and operation-specific parameters. The server rejects an
+already-used nonce. Upload authentication also binds the recipient, encoded
+name, object type, content length and SHA-256 body digest. The server recomputes
+the upload digest after receiving the body.
+
+8. PASSWORD LIFETIME
+
+The plaintext password exists only while the user is entering and submitting
+it. After authentication the GUI clears the password fields. The application
+keeps a derived proof secret in process memory so temporary network reconnects
+during the same application run do not force the user to type the password
+again. Closing the application removes that runtime state. On the next launch
+the password must be entered again.
+
+9. DHCP CLIENT ADDRESSES
+
+A client is identified cryptographically, not by its IP. After successful
+authentication the server updates Last IP. If DHCP gives the same approved
+client a different address, the same token and password still authenticate it.
+The updated Last IP is then available to the PCAP experiment subsystem as the
+current capture target. The server itself remains on a fixed address.
+
+10. ADMIN STATES
+
+PENDING means a new request is waiting for administrator approval. APPROVED
+allows authentication and normal work. REJECTED refuses the request. BLOCKED
+revokes the active realtime connection and in-memory HTTP sessions. The Admin
+panel can approve, reject and block a selected client.
+
+11. COMPROMISE MODEL
+
+If only the client files are copied, the attacker can obtain the hidden token
+but not the password. That is insufficient for a new login. If only the server
+database is copied, the attacker receives public verifiers and salts but not
+the raw token or password. Because the password verifier in v6.3.0 is derived
+from both password and token, a database-only attacker also lacks the token
+material needed for direct password-candidate verification.
+
+If both client storage and the server database are compromised, offline
+password guessing becomes possible and password strength matters. If a running
+client process is compromised, in-memory derived authentication material may be
+exposed. If the entire live server process is fully controlled by an attacker,
+server-side access checks can be bypassed by changing the program itself. No
+authentication protocol can protect against an attacker who completely controls
+the trusted server execution environment.
+
+12. TRANSPORT SCOPE
+
+The v6.3.0 protocol protects authentication secrets and adds authenticated HTTP
+requests with replay protection. It does not encrypt all application payloads.
+The existing realtime chat channel remains plaintext after successful login.
+For production confidentiality and full transport integrity, TLS with server
+certificate validation should be added. The current design intentionally keeps
+traffic observable for the diploma traffic-analysis and PCAP experiments while
+avoiding transmission of reusable authentication secrets.
