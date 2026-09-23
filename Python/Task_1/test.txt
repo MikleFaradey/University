@@ -1,0 +1,58 @@
+GET /users/user99
+404 Not Found
+{
+  "error": "Пользователь не найден"
+}
+
+GET /foo
+404 Not Found
+{
+  "error": "Маршрут не найден"
+}
+
+POST /users/user1/score {"score": 100
+400 Bad Request
+{
+  "error": "Невалидный JSON"
+}
+
+POST /users/user1/score {"score": "abc"}
+400 Bad Request
+{
+  "error": "Поле score должно быть числом"
+}
+
+DELETE /users
+405 Method Not Allowed
+{
+  "error": "Метод не поддерживается"
+}
+Если прерывается соединение во время выполнения POST
+Клиент закрывает соединение перед отправкой полного тела запроса
+
+Проверка работы сервера после разрыва соединения с клиентом
+GET /users
+200 OK
+{
+  "user1": {
+    "name": "Алексей",
+    "game": "Dota 2",
+    "level": 42,
+    "score": 15320,
+    "playtime_hours": 210
+  },
+  "user2": {
+    "name": "Мария",
+    "game": "Valorant",
+    "level": 30,
+    "score": 9870,
+    "playtime_hours": 95
+  },
+  "user3": {
+    "name": "Игорь",
+    "game": "CS2",
+    "level": 55,
+    "score": 21000,
+    "playtime_hours": 340
+  }
+}
