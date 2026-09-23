@@ -51,7 +51,7 @@ def run_tests():
     sock.sendall(b'POST /users/user1/score HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: 100\r\n\r\n{"score":')
     sock.close()
 
-    log.append("Connection interrupted during POST")
+    log.append("Если прерывается соединение во время выполнения POST")
     log.append("Client closed connection before sending complete request body")
     log.append("")
 
