@@ -1,0 +1,66 @@
+#!/bin/sh
+set -e
+
+BACKUP_SUFFIX=".interchange-upgrade-638"
+MARKER="/var/tmp/interchange-client-upgrade-638"
+
+backup_path() {
+    src="$1"
+    backup="${src}${BACKUP_SUFFIX}"
+    if [ -e "$src" ] && [ ! -e "$backup" ]; then
+        mv "$src" "$backup"
+    fi
+}
+
+backup_home() {
+    home_dir="$1"
+    [ -d "$home_dir" ] || return 0
+    backup_path "$home_dir/.config/interchange"
+    backup_path "$home_dir/.interchange"
+    backup_path "$home_dir/InterchangeReceived"
+    backup_path "$home_dir/InterchangeServerReceived"
+}
+
+clean_home() {
+    home_dir="$1"
+    [ -d "$home_dir" ] || return 0
+    rm -rf "$home_dir/.config/interchange"
+    rm -rf "$home_dir/.interchange"
+    rm -rf "$home_dir/InterchangeReceived"
+    rm -rf "$home_dir/InterchangeServerReceived"
+}
+
+case "${1:-}" in
+    install)
+        clean_home /root
+        if [ -d /home ]; then
+            for home_dir in /home/*; do
+                [ -d "$home_dir" ] || continue
+                clean_home "$home_dir"
+            done
+        fi
+        rm -rf /var/lib/interchange /var/log/interchange /etc/interchange
+        ;;
+    upgrade)
+        # v6.3.0-v6.3.7 shipped a postrm that deleted Interchange state and
+        # /opt/interchange/client even during dpkg upgrades. Move state out of
+        # those exact paths before that legacy postrm can run; postinst restores
+        # it after the new package is configured.
+        old_version="${2:-0}"
+        if command -v dpkg >/dev/null 2>&1 && dpkg --compare-versions "$old_version" lt 6.3.8; then
+            backup_home /root
+            if [ -d /home ]; then
+                for home_dir in /home/*; do
+                    [ -d "$home_dir" ] || continue
+                    backup_home "$home_dir"
+                done
+            fi
+            backup_path /var/lib/interchange
+            backup_path /var/log/interchange
+            backup_path /etc/interchange
+            : > "$MARKER"
+        fi
+        ;;
+esac
+
+exit 0

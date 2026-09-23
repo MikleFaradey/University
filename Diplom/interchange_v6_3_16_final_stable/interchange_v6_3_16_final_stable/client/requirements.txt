@@ -1,0 +1,6 @@
+requests>=2.28,<2.32; python_version < "3.8"
+requests>=2.28; python_version >= "3.8"
+# The GUI needs ONE of these options:
+# PySide6>=6.5 (Python 3.7: use PySide6==6.5.3)
+# or PySide2
+# or PyQt5 (used by the native Debian/Astra package)

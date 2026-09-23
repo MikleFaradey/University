@@ -1,0 +1,67 @@
+#!/bin/sh
+set -e
+
+BACKUP_SUFFIX=".interchange-upgrade-638"
+MARKER="/var/tmp/interchange-client-upgrade-638"
+
+clean_home() {
+    home_dir="$1"
+    [ -d "$home_dir" ] || return 0
+    rm -rf "$home_dir/.config/interchange"
+    rm -rf "$home_dir/.interchange"
+    rm -rf "$home_dir/InterchangeReceived"
+    rm -rf "$home_dir/InterchangeServerReceived"
+}
+
+restore_path() {
+    dst="$1"
+    backup="${dst}${BACKUP_SUFFIX}"
+    if [ -e "$backup" ]; then
+        rm -rf "$dst"
+        mv "$backup" "$dst"
+    fi
+}
+
+restore_all_backups() {
+    restore_path /root/.config/interchange
+    restore_path /root/.interchange
+    restore_path /root/InterchangeReceived
+    restore_path /root/InterchangeServerReceived
+    if [ -d /home ]; then
+        for home_dir in /home/*; do
+            [ -d "$home_dir" ] || continue
+            restore_path "$home_dir/.config/interchange"
+            restore_path "$home_dir/.interchange"
+            restore_path "$home_dir/InterchangeReceived"
+            restore_path "$home_dir/InterchangeServerReceived"
+        done
+    fi
+    restore_path /var/lib/interchange
+    restore_path /var/log/interchange
+    restore_path /etc/interchange
+    rm -f "$MARKER"
+}
+
+case "${1:-}" in
+    purge)
+        clean_home /root
+        if [ -d /home ]; then
+            for home_dir in /home/*; do
+                [ -d "$home_dir" ] || continue
+                clean_home "$home_dir"
+            done
+        fi
+        rm -rf /var/lib/interchange /var/log/interchange /etc/interchange
+        ;;
+    abort-install|abort-upgrade|failed-upgrade)
+        if [ -e "$MARKER" ]; then
+            restore_all_backups
+        fi
+        ;;
+    upgrade|remove|disappear)
+        # dpkg owns package payload removal. Never recursively delete the app
+        # directory from postrm; doing so breaks upgrades.
+        ;;
+esac
+
+exit 0

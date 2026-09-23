@@ -1,0 +1,29 @@
+#!/bin/sh
+set -e
+
+clean_home() {
+    home_dir="$1"
+    [ -d "$home_dir" ] || return 0
+    rm -rf "$home_dir/.config/interchange"
+    rm -rf "$home_dir/.interchange"
+    rm -rf "$home_dir/InterchangeReceived"
+    rm -rf "$home_dir/InterchangeServerReceived"
+    rm -rf "$home_dir/Library/Application Support/Interchange"
+    rm -rf "$home_dir/Library/Caches/Interchange"
+    rm -f "$home_dir/Library/Preferences/com.interchange.client.plist"
+}
+
+clean_home /var/root
+
+if [ -d /Users ]; then
+    for home_dir in /Users/*; do
+        [ -d "$home_dir" ] || continue
+        clean_home "$home_dir"
+    done
+fi
+
+rm -rf "/Applications/Interchange.app"
+rm -rf /Library/Application\ Support/Interchange
+rm -rf /Library/Caches/Interchange
+
+exit 0

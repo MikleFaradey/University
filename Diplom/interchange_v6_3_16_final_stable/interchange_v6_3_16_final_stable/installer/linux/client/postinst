@@ -1,0 +1,56 @@
+#!/bin/sh
+set -e
+
+BACKUP_SUFFIX=".interchange-upgrade-638"
+MARKER="/var/tmp/interchange-client-upgrade-638"
+
+restore_path() {
+    dst="$1"
+    backup="${dst}${BACKUP_SUFFIX}"
+    if [ -e "$backup" ]; then
+        rm -rf "$dst"
+        mv "$backup" "$dst"
+    fi
+}
+
+restore_home() {
+    home_dir="$1"
+    [ -d "$home_dir" ] || return 0
+    restore_path "$home_dir/.config/interchange"
+    restore_path "$home_dir/.interchange"
+    restore_path "$home_dir/InterchangeReceived"
+    restore_path "$home_dir/InterchangeServerReceived"
+}
+
+case "${1:-configure}" in
+    configure)
+        if [ -e "$MARKER" ]; then
+            restore_home /root
+            if [ -d /home ]; then
+                for home_dir in /home/*; do
+                    [ -d "$home_dir" ] || continue
+                    restore_home "$home_dir"
+                done
+            fi
+            restore_path /var/lib/interchange
+            restore_path /var/log/interchange
+            restore_path /etc/interchange
+            rm -f "$MARKER"
+        fi
+
+        PYTHONNOUSERSITE=1 INTERCHANGE_QT_API=PyQt5 /usr/bin/python3 - <<'PY'
+import requests
+from PyQt5 import QtCore, QtGui, QtWidgets
+print('Interchange runtime imports: OK')
+PY
+
+        if command -v update-desktop-database >/dev/null 2>&1; then
+            update-desktop-database /usr/share/applications >/dev/null 2>&1 || true
+        fi
+        if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+            gtk-update-icon-cache -q -t -f /usr/share/icons/hicolor >/dev/null 2>&1 || true
+        fi
+        ;;
+esac
+
+exit 0

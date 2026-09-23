@@ -1,0 +1,85 @@
+#!/bin/sh
+set -u
+
+APP_DIR=/usr/lib/interchange-client
+APP="$APP_DIR/client_gui.py"
+PYTHON=/usr/bin/python3
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/interchange"
+RUNTIME_DIR="$HOME/.interchange"
+LOG="$STATE_DIR/launcher.log"
+
+mkdir -p "$STATE_DIR" "$RUNTIME_DIR" 2>/dev/null || true
+
+export PYTHONNOUSERSITE=1
+export INTERCHANGE_QT_API=PyQt5
+
+run_diagnostics() {
+    echo "Interchange Linux diagnostics"
+    echo "app: $APP"
+    echo "python: $PYTHON"
+    echo "home: $HOME"
+    echo "display: ${DISPLAY:-<unset>}"
+    echo "wayland_display: ${WAYLAND_DISPLAY:-<unset>}"
+    echo "xdg_session_type: ${XDG_SESSION_TYPE:-<unset>}"
+    echo
+
+    if [ ! -x "$PYTHON" ]; then
+        echo "ERROR: /usr/bin/python3 is missing"
+        return 2
+    fi
+    if [ ! -r "$APP" ]; then
+        echo "ERROR: $APP is missing"
+        echo "Reinstall with: sudo apt install --reinstall ./interchange-client_6.3.16_all.deb"
+        return 3
+    fi
+
+    "$PYTHON" --version
+    "$PYTHON" - <<'PY'
+import sys
+print('sys.executable:', sys.executable)
+try:
+    import requests
+    print('requests:', getattr(requests, '__version__', 'ok'))
+except Exception as exc:
+    print('ERROR importing requests:', repr(exc))
+    raise
+try:
+    import PyQt5
+    from PyQt5 import QtCore, QtGui, QtWidgets
+    print('PyQt5:', getattr(PyQt5, '__version__', 'system package'))
+    print('Qt:', getattr(QtCore, '__version__', QtCore.qVersion()))
+except Exception as exc:
+    print('ERROR importing PyQt5/Qt:', repr(exc))
+    raise
+PY
+
+    echo
+    echo "Headless Qt/application self-test:"
+    QT_QPA_PLATFORM=offscreen "$PYTHON" "$APP" --self-test
+}
+
+if [ "${1:-}" = "--diagnose" ]; then
+    shift
+    run_diagnostics "$@"
+    exit $?
+fi
+
+if [ ! -r "$APP" ]; then
+    echo "Interchange installation is incomplete: $APP is missing." >&2
+    exit 127
+fi
+
+cd "$RUNTIME_DIR" || exit 1
+
+if [ -t 2 ]; then
+    exec "$PYTHON" "$APP" "$@"
+fi
+
+{
+    echo "===== $(date '+%Y-%m-%d %H:%M:%S') Interchange start ====="
+    echo "DISPLAY=${DISPLAY:-} WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-} XDG_SESSION_TYPE=${XDG_SESSION_TYPE:-}"
+    "$PYTHON" "$APP" "$@"
+    status=$?
+    echo "Interchange exited with status $status"
+    exit "$status"
+} >>"$LOG" 2>&1

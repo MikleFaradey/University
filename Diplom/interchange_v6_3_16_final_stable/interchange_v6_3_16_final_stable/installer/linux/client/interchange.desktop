@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Interchange
+Comment=Interchange LAN client
+Exec=/usr/bin/interchange-client
+Icon=interchange
+Terminal=false
+Categories=Network;Utility;
+StartupNotify=true
