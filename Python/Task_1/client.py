@@ -64,7 +64,7 @@ def run_tests():
     with open("test_results.txt", "w", encoding="utf-8") as file:
         file.write("\n".join(log))
 
-    print("Tests completed. Results: test_results.txt")
+    print("Tests completed. Results: test.txt")
 
 def help():
     print("""GET /users
