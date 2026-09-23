@@ -1,0 +1,15 @@
+Результаты тестирования
+
+GET /users: 200 (ожидалось 200) OK
+GET /users/user2: 200 (ожидалось 200) OK
+POST /users/user1/score: 200 (ожидалось 200) OK
+GET /users/user99: 404 (ожидалось 404) OK
+POST /users/user1/score: 400 (ожидалось 400) OK
+POST /users/user1/score: 400 (ожидалось 400) OK
+POST /users/user1/score: 400 (ожидалось 400) OK
+GET /foo: 404 (ожидалось 404) OK
+DELETE /users: 405 (ожидалось 405) OK
+GET /error: 500 (ожидалось 500) OK
+GET /users после обрыва и ошибки 500: 200 (ожидалось 200) OK
+Обрыв соединения: клиент отправил неполный POST и закрыл сокет.
+Устойчивость: OK
