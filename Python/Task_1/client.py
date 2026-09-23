@@ -52,7 +52,7 @@ def run_tests():
     sock.close()
 
     log.append("Если прерывается соединение во время выполнения POST")
-    log.append("Client closed connection before sending complete request body")
+    log.append("Клиент закрывает соединение перед отправкой полного тела запроса")
     log.append("")
 
     status, reason, response = request("GET", "/users")
