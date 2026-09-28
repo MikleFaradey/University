@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Теория чисел</title>
+  <script src="https://telegram.org/js/telegram-web-app.js?63"></script>
+  <style>
+    :root{
+      --bg:var(--tg-theme-bg-color,#f3f5f8);
+      --card:var(--tg-theme-secondary-bg-color,#fff);
+      --text:var(--tg-theme-text-color,#172033);
+      --muted:var(--tg-theme-hint-color,#6f7a8d);
+      --accent:var(--tg-theme-button-color,#2481cc);
+      --accentText:var(--tg-theme-button-text-color,#fff);
+      --border:#d8dee8;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+    body{padding:max(14px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(22px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+    .app{width:min(900px,100%);margin:auto}
+    header{padding:8px 4px 16px}
+    .eyebrow{margin:0 0 3px;color:var(--accent);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+    h1{margin:0;font-size:clamp(28px,7vw,40px)}
+    .subtitle,.hint{color:var(--muted)}
+    .subtitle{margin:5px 0 0}.hint{margin:4px 0 14px;font-size:14px}
+    .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;background:var(--card);padding:5px;border-radius:15px;margin-bottom:10px}
+    button,input{font:inherit}
+    button{border:0;border-radius:12px;padding:11px 14px;font-weight:750;cursor:pointer}
+    .tab{background:transparent;color:var(--muted)}
+    .tab.active,.primary{background:var(--accent);color:var(--accentText)}
+    .secondary{background:#eaf3fb;color:var(--accent)}
+    .ghost{background:transparent;color:var(--muted)}
+    .panel{display:none}.panel.active{display:block}
+    .card,.result{background:var(--card);border-radius:18px}
+    .card{padding:16px}.result{margin-top:10px;overflow:hidden}
+    h2{margin:0;font-size:20px}.grid{display:grid;gap:10px}.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+    label{display:grid;gap:6px;color:var(--muted);font-size:13px;font-weight:700}
+    input{width:100%;min-width:0;border:1px solid var(--border);border-radius:12px;background:var(--bg);color:var(--text);padding:12px 13px;outline:none}
+    input:focus{border-color:var(--accent)}
+    .actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:14px}
+    .resultHead{display:flex;justify-content:space-between;gap:10px;padding:13px 16px;border-bottom:1px solid var(--border)}
+    .resultHead b{font-size:15px}.readonly{font-size:12px;color:var(--muted)}
+    pre{margin:0;padding:16px;min-height:170px;max-height:58vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;user-select:text;-webkit-user-select:text;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    .crtHead,.crtRow{display:grid;grid-template-columns:1fr 1fr 1fr 42px;gap:7px;align-items:center}
+    .crtHead{padding:0 4px 5px;color:var(--muted);font-size:12px;font-weight:800}
+    .crtRow{margin-bottom:7px}.remove{width:42px;height:42px;padding:0;background:#fdecec;color:#c93434;font-size:20px}
+    .toast{position:fixed;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translate(-50%,20px);opacity:0;background:#111827;color:#fff;padding:10px 14px;border-radius:12px;font-size:13px;pointer-events:none;transition:.2s}
+    .toast.show{opacity:1;transform:translate(-50%,0)}
+    @media(max-width:520px){.two{grid-template-columns:1fr}.actions button{flex:1 1 auto}.card{padding:15px}}
+  </style>
+</head>
+<body>
+<main class="app">
+  <header>
+    <p class="eyebrow">Дискретная математика</p>
+    <h1>Теория чисел</h1>
+    <p class="subtitle">Подробные решения прямо в Telegram или браузере</p>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="gcd">НОД</button>
+    <button class="tab" data-tab="inverse">Обратный</button>
+    <button class="tab" data-tab="crt">КТО</button>
+  </nav>
+
+  <section class="panel active" id="panel-gcd">
+    <div class="card">
+      <h2>НОД и коэффициенты Безу</h2>
+      <p class="hint">Введите два целых числа.</p>
+      <div class="grid two">
+        <label>n₁<input id="gcd-a" inputmode="numeric" value="423536"></label>
+        <label>n₂<input id="gcd-b" inputmode="numeric" value="354532"></label>
+      </div>
+      <div class="actions">
+        <button class="primary" id="gcd-solve">Решить</button>
+        <button class="secondary" id="gcd-example">Пример с фото</button>
+        <button class="ghost copy" data-target="gcd-out">Копировать</button>
+      </div>
+    </div>
+    <div class="result">
+      <div class="resultHead"><b>Ход решения</b><span class="readonly">только чтение</span></div>
+      <pre id="gcd-out"></pre>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-inverse">
+    <div class="card">
+      <h2>Обратный элемент</h2>
+      <p class="hint">Найти a⁻¹ (mod m).</p>
+      <div class="grid two">
+        <label>a<input id="inv-a" inputmode="numeric" value="31"></label>
+        <label>m<input id="inv-m" inputmode="numeric" value="1000"></label>
+      </div>
+      <div class="actions">
+        <button class="primary" id="inv-solve">Решить</button>
+        <button class="secondary" id="inv-example">Пример с фото</button>
+        <button class="ghost copy" data-target="inv-out">Копировать</button>
+      </div>
+    </div>
+    <div class="result">
+      <div class="resultHead"><b>Ход решения</b><span class="readonly">только чтение</span></div>
+      <pre id="inv-out"></pre>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-crt">
+    <div class="card">
+      <h2>Китайская теорема об остатках</h2>
+      <p class="hint">Строка задаётся как a·x ≡ b (mod m).</p>
+      <div class="crtHead"><span>a</span><span>b</span><span>m</span><span></span></div>
+      <div id="crt-rows"></div>
+      <div class="actions">
+        <button class="secondary" id="crt-add">+ Строка</button>
+        <button class="secondary" id="crt-example">Пример</button>
+        <button class="primary" id="crt-solve">Решить систему</button>
+        <button class="ghost copy" data-target="crt-out">Копировать</button>
+      </div>
+    </div>
+    <div class="result">
+      <div class="resultHead"><b>Ход решения</b><span class="readonly">только чтение</span></div>
+      <pre id="crt-out"></pre>
+    </div>
+  </section>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+  if(tg){ tg.ready(); tg.expand(); }
+
+  function el(id){ return document.getElementById(id); }
+  function put(id,text){ el(id).textContent=text; }
+  function abs(n){ return n<0n?-n:n; }
+  function mod(a,m){ return ((a%m)+m)%m; }
+  function parseIntStrict(v,name){
+    var s=String(v).trim();
+    if(!/^[+-]?\d+$/.test(s)) throw new Error("Поле «"+name+"» должно содержать целое число.");
+    return BigInt(s);
+  }
+  function buzz(type){
+    try{ if(tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred(type||"light"); }catch(e){}
+  }
+  function toast(msg){
+    var t=el("toast"); t.textContent=msg; t.classList.add("show");
+    clearTimeout(toast.timer); toast.timer=setTimeout(function(){t.classList.remove("show");},1400);
+  }
+  function gcd(a,b){
+    a=abs(a); b=abs(b);
+    while(b!==0n){ var r=a%b; a=b; b=r; }
+    return a;
+  }
+  function egcd(a,b){
+    var or=a,r=b,os=1n,s=0n,ot=0n,t=1n;
+    while(r!==0n){
+      var q=or/r;
+      var nr=or-q*r; or=r; r=nr;
+      var ns=os-q*s; os=s; s=ns;
+      var nt=ot-q*t; ot=t; t=nt;
+    }
+    if(or<0n) return [-or,-os,-ot];
+    return [or,os,ot];
+  }
+  function euclid(a,b){
+    var rs=[a,b],qs=[];
+    while(rs[rs.length-1]!==0n){
+      var x=rs[rs.length-2],y=rs[rs.length-1];
+      qs.push(x/y); rs.push(x%y);
+    }
+    return {r:rs,q:qs};
+  }
+  function fmtExpr(items,vals){
+    var s="",first=true;
+    items.forEach(function(p){
+      var idx=p[0],c=p[1]; if(c===0n) return;
+      var ac=abs(c),body=(ac===1n?"":String(ac)+"·")+String(vals[idx]);
+      if(first){s+=(c<0n?"-":"")+body;first=false;}
+      else s+=(c<0n?" - ":" + ")+body;
+    });
+    return s||"0";
+  }
+  function fmtSub(items,target,q,vals){
+    var s="",first=true;
+    items.forEach(function(p){
+      var idx=p[0],c=p[1]; if(c===0n) return;
+      var body,ac=abs(c);
+      if(idx===target){
+        var inside=String(vals[target-2])+" - "+String(q)+"·"+String(vals[target-1]);
+        body=(ac===1n?"":String(ac)+"·")+"("+inside+")";
+      }else body=(ac===1n?"":String(ac)+"·")+String(vals[idx]);
+      if(first){s+=(c<0n?"-":"")+body;first=false;}
+      else s+=(c<0n?" - ":" + ")+body;
+    });
+    return s;
+  }
+  function combine(items){
+    var order=[],map={};
+    items.forEach(function(p){
+      var k=String(p[0]);
+      if(!(k in map)){order.push(p[0]);map[k]=0n;}
+      map[k]+=p[1];
+    });
+    return order.map(function(i){return [i,map[String(i)]];}).filter(function(p){return p[1]!==0n;});
+  }
+  function backSub(a,b){
+    var e=euclid(a,b),rs=e.r,qs=e.q,g=rs[rs.length-2],gi=rs.length-2;
+    if(gi===1) return {g:g,steps:[String(g)+" = "+String(b)],ca:0n,cb:1n};
+    var items=[[gi-2,1n],[gi-1,-qs[gi-2]]];
+    var steps=[String(g)+" = "+fmtExpr(items,rs)];
+    var target=gi-1;
+    while(target>=2){
+      var q=qs[target-2];
+      steps.push("  = "+fmtSub(items,target,q,rs));
+      var ex=[];
+      items.forEach(function(p){
+        if(p[0]===target){ex.push([target-2,p[1]]);ex.push([target-1,-p[1]*q]);}
+        else ex.push(p);
+      });
+      items=combine(ex);
+      steps.push("  = "+fmtExpr(items,rs));
+      var candidates=items.filter(function(p){return p[0]>=2 && p[1]!==0n;}).map(function(p){return p[0];});
+      if(!candidates.length) break;
+      target=Math.max.apply(null,candidates);
+    }
+    var ca=0n,cb=0n;
+    items.forEach(function(p){if(p[0]===0)ca+=p[1];if(p[0]===1)cb+=p[1];});
+    return {g:g,steps:steps,ca:ca,cb:cb};
+  }
+
+  function solveGcd(n1,n2){
+    if(n1===0n&&n2===0n) throw new Error("НОД(0, 0) не определён.");
+    if(n1===0n||n2===0n){
+      var gg=n1===0n?abs(n2):abs(n1);
+      return "НОД("+n1+", "+n2+") = "+gg;
+    }
+    var a=abs(n1),b=abs(n2),sw=false;
+    if(a<b){var z=a;a=b;b=z;sw=true;}
+    var e=euclid(a,b),back=backSub(a,b),c1,c2;
+    if(sw){c1=back.cb;c2=back.ca;}else{c1=back.ca;c2=back.cb;}
+    if(n1<0n)c1=-c1;if(n2<0n)c2=-c2;
+
+    var L=[];
+    L.push("НАХОЖДЕНИЕ НОД АЛГОРИТМОМ ЕВКЛИДА");
+    L.push("======================================================");
+    L.push("Исходные числа: n₁ = "+n1+", n₂ = "+n2);
+    if(sw)L.push("Для вычислений меняем порядок: "+a+", "+b+".");
+    L.push("");
+    L.push("1. Прямой ход алгоритма Евклида");
+    L.push("------------------------------------------------------");
+    for(var i=0;i<e.q.length;i++)L.push(e.r[i]+" = "+e.q[i]+"·"+e.r[i+1]+" + "+e.r[i+2]);
+    L.push("");
+    L.push("Последний ненулевой остаток: "+back.g+".");
+    L.push("НОД("+n1+", "+n2+") = "+back.g+".");
+    L.push("");
+    L.push("2. Обратный ход");
+    L.push("------------------------------------------------------");
+    back.steps.forEach(function(s){L.push(s);});
+    L.push("");
+    L.push("3. Коэффициенты Безу");
+    L.push("------------------------------------------------------");
+    L.push(back.g+" = ("+c1+")·"+n1+" + ("+c2+")·"+n2);
+    L.push("Проверка: "+(c1*n1+c2*n2));
+    L.push("");
+    L.push("ОТВЕТ");
+    L.push("======================================================");
+    L.push("НОД("+n1+", "+n2+") = "+back.g);
+    L.push(back.g+" = ("+c1+")·"+n1+" + ("+c2+")·"+n2);
+    return L.join("\n");
+  }
+
+  function invValue(a,m){
+    var e=egcd(a,m);
+    return e[0]===1n?mod(e[1],m):null;
+  }
+
+  function solveInverse(a,m){
+    if(m<=1n) throw new Error("Модуль m должен быть больше 1.");
+    var a0=mod(a,m),e=euclid(m,a0),back;
+    if(a0===0n) return "НОД(0, "+m+") = "+m+" ≠ 1.\n\nОбратного элемента не существует.";
+    back=backSub(m,a0);
+    var L=[];
+    L.push("НАХОЖДЕНИЕ ОБРАТНОГО ЭЛЕМЕНТА");
+    L.push("======================================================");
+    L.push("Найти: "+a+"⁻¹ (mod "+m+")");
+    if(a0!==a)L.push(a+" ≡ "+a0+" (mod "+m+")");
+    L.push("");
+    L.push("1. Прямой ход алгоритма Евклида");
+    L.push("------------------------------------------------------");
+    for(var i=0;i<e.q.length;i++)L.push(e.r[i]+" = "+e.q[i]+"·"+e.r[i+1]+" + "+e.r[i+2]);
+    L.push("");
+    L.push("НОД("+a0+", "+m+") = "+back.g);
+    if(back.g!==1n){
+      L.push("");
+      L.push("Так как НОД ≠ 1, обратного элемента не существует.");
+      return L.join("\n");
+    }
+    L.push("");
+    L.push("2. Обратный ход");
+    L.push("------------------------------------------------------");
+    back.steps.forEach(function(s){L.push(s);});
+    var raw=back.cb,inv=mod(raw,m);
+    L.push("");
+    L.push("3. Выделяем коэффициент при a");
+    L.push("------------------------------------------------------");
+    L.push("1 = ("+back.ca+")·"+m+" + ("+raw+")·"+a0);
+    L.push(a0+"⁻¹ ≡ "+raw+" (mod "+m+")");
+    if(raw!==inv){
+      var k=(inv-raw)/m;
+      L.push(raw+" "+(k>=0n?"+":"-")+" "+abs(k)+"·"+m+" = "+inv);
+    }
+    L.push("");
+    L.push("4. Проверка");
+    L.push("------------------------------------------------------");
+    L.push(a0+"·"+inv+" = "+(a0*inv));
+    L.push((a0*inv)+" mod "+m+" = "+mod(a0*inv,m));
+    L.push("");
+    L.push("ОТВЕТ");
+    L.push("======================================================");
+    L.push(a+"⁻¹ ≡ "+inv+" (mod "+m+")");
+    return L.join("\n");
+  }
+
+  function pairwise(ms){
+    for(var i=0;i<ms.length;i++)for(var j=i+1;j<ms.length;j++)if(gcd(ms[i],ms[j])!==1n)return [false,i,j];
+    return [true,-1,-1];
+  }
+
+  function solveCrt(rows){
+    if(rows.length<2)throw new Error("Введите минимум два сравнения.");
+    var norm=[],L=[];
+    L.push("КИТАЙСКАЯ ТЕОРЕМА ОБ ОСТАТКАХ");
+    L.push("==========================================================");
+    L.push("Исходная система:");
+    rows.forEach(function(r,i){L.push((i+1)+") "+r.a+"·x ≡ "+r.b+" (mod "+r.m+")");});
+    L.push("");
+    L.push("1. Приводим к виду x ≡ rᵢ (mod mᵢ)");
+    L.push("----------------------------------------------------------");
+
+    rows.forEach(function(row,i){
+      if(row.m<=1n)throw new Error("В строке "+(i+1)+" модуль должен быть больше 1.");
+      var a=mod(row.a,row.m),b=mod(row.b,row.m),g=gcd(a,row.m);
+      L.push("");
+      L.push("Сравнение "+(i+1)+": "+row.a+"·x ≡ "+row.b+" (mod "+row.m+")");
+      L.push("НОД("+a+", "+row.m+") = "+g);
+      if(b%g!==0n)throw new Error("Строка "+(i+1)+" не имеет решений.");
+      var ar=a/g,br=b/g,mr=row.m/g;
+      if(g!==1n){
+        L.push("Делим на "+g+":");
+        L.push(ar+"·x ≡ "+br+" (mod "+mr+")");
+      }
+      var inv=invValue(ar,mr);
+      if(inv===null)throw new Error("Не удалось найти обратный элемент в строке "+(i+1)+".");
+      var r=mod(br*inv,mr);
+      L.push(ar+"⁻¹ ≡ "+inv+" (mod "+mr+")");
+      L.push("x ≡ "+br+"·"+inv+" ≡ "+r+" (mod "+mr+")");
+      norm.push({r:r,m:mr});
+    });
+
+    var ms=norm.map(function(x){return x.m;}),pw=pairwise(ms);
+    L.push("");
+    L.push("Полученная система:");
+    norm.forEach(function(x){L.push("x ≡ "+x.r+" (mod "+x.m+")");});
+    if(!pw[0]){
+      L.push("");
+      L.push("Модули не попарно взаимно просты.");
+      L.push("НОД("+ms[pw[1]]+", "+ms[pw[2]]+") = "+gcd(ms[pw[1]],ms[pw[2]])+".");
+      L.push("Для этой системы нужен обобщённый вариант КТО.");
+      return L.join("\n");
+    }
+
+    var M=1n;ms.forEach(function(x){M*=x;});
+    L.push("");
+    L.push("2. Общий модуль");
+    L.push("----------------------------------------------------------");
+    L.push("M = "+ms.map(String).join("·")+" = "+M);
+    L.push("");
+    L.push("3. Находим Mᵢ, обратные элементы и eᵢ");
+    L.push("----------------------------------------------------------");
+
+    var terms=[];
+    norm.forEach(function(x,i){
+      var Mi=M/x.m,inv=invValue(mod(Mi,x.m),x.m),ei=Mi*inv;
+      terms.push({r:x.r,m:x.m,Mi:Mi,inv:inv,ei:ei});
+      L.push("");
+      L.push("i = "+(i+1)+":");
+      L.push("M"+(i+1)+" = "+M+" / "+x.m+" = "+Mi);
+      L.push(Mi+"·y ≡ 1 (mod "+x.m+")");
+      L.push("y ≡ "+inv+" (mod "+x.m+")");
+      L.push("e"+(i+1)+" = "+Mi+"·"+inv+" = "+ei);
+    });
+
+    var raw=0n;
+    terms.forEach(function(t){raw+=t.r*t.ei;});
+    var x0=mod(raw,M);
+    L.push("");
+    L.push("4. Строим решение");
+    L.push("----------------------------------------------------------");
+    L.push("x = "+terms.map(function(t){return t.r+"·"+t.ei;}).join(" + "));
+    L.push("x = "+raw);
+    if(raw!==x0)L.push(raw+" ≡ "+x0+" (mod "+M+")");
+    L.push("");
+    L.push("5. Проверка исходной системы");
+    L.push("----------------------------------------------------------");
+    rows.forEach(function(row,i){
+      var left=mod(row.a*x0,row.m),right=mod(row.b,row.m);
+      L.push((i+1)+") "+row.a+"·"+x0+" mod "+row.m+" = "+left+"; "+row.b+" mod "+row.m+" = "+right+" ✓");
+    });
+    L.push("");
+    L.push("ОТВЕТ");
+    L.push("==========================================================");
+    L.push("x ≡ "+x0+" (mod "+M+")");
+    L.push("x = "+x0+" + "+M+"·k,  k ∈ ℤ");
+    return L.join("\n");
+  }
+
+  document.querySelectorAll(".tab").forEach(function(btn){
+    btn.addEventListener("click",function(){
+      document.querySelectorAll(".tab").forEach(function(x){x.classList.remove("active");});
+      document.querySelectorAll(".panel").forEach(function(x){x.classList.remove("active");});
+      btn.classList.add("active");
+      el("panel-"+btn.getAttribute("data-tab")).classList.add("active");
+      buzz();
+    });
+  });
+
+  el("gcd-solve").onclick=function(){
+    try{put("gcd-out",solveGcd(parseIntStrict(el("gcd-a").value,"n₁"),parseIntStrict(el("gcd-b").value,"n₂")));buzz("medium");}
+    catch(e){put("gcd-out","Ошибка: "+e.message);}
+  };
+  el("gcd-example").onclick=function(){el("gcd-a").value="423536";el("gcd-b").value="354532";el("gcd-solve").click();};
+
+  el("inv-solve").onclick=function(){
+    try{put("inv-out",solveInverse(parseIntStrict(el("inv-a").value,"a"),parseIntStrict(el("inv-m").value,"m")));buzz("medium");}
+    catch(e){put("inv-out","Ошибка: "+e.message);}
+  };
+  el("inv-example").onclick=function(){el("inv-a").value="31";el("inv-m").value="1000";el("inv-solve").click();};
+
+  function addRow(a,b,m){
+    var row=document.createElement("div");
+    row.className="crtRow";
+    row.innerHTML='<input class="ca" inputmode="numeric" value="'+(a||"")+'"><input class="cb" inputmode="numeric" value="'+(b||"")+'"><input class="cm" inputmode="numeric" value="'+(m||"")+'"><button class="remove">×</button>';
+    row.querySelector(".remove").onclick=function(){
+      if(document.querySelectorAll(".crtRow").length<=2){toast("Нужно минимум 2 сравнения");return;}
+      row.remove();buzz();
+    };
+    el("crt-rows").appendChild(row);
+  }
+  function exampleCrt(){
+    el("crt-rows").innerHTML="";
+    addRow("1","1","3");
+    addRow("1","2","4");
+    addRow("1","3","5");
+    el("crt-solve").click();
+  }
+  el("crt-add").onclick=function(){addRow("","","");buzz();};
+  el("crt-example").onclick=exampleCrt;
+  el("crt-solve").onclick=function(){
+    try{
+      var rows=Array.prototype.map.call(document.querySelectorAll(".crtRow"),function(r,i){
+        return{
+          a:parseIntStrict(r.querySelector(".ca").value,"a"+(i+1)),
+          b:parseIntStrict(r.querySelector(".cb").value,"b"+(i+1)),
+          m:parseIntStrict(r.querySelector(".cm").value,"m"+(i+1))
+        };
+      });
+      put("crt-out",solveCrt(rows));buzz("medium");
+    }catch(e){put("crt-out","Ошибка: "+e.message);}
+  };
+
+  document.querySelectorAll(".copy").forEach(function(btn){
+    btn.onclick=function(){
+      var text=el(btn.getAttribute("data-target")).textContent;
+      if(!text.trim())return;
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(function(){toast("Решение скопировано");buzz();});
+      }else{
+        var ta=document.createElement("textarea");ta.value=text;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();toast("Решение скопировано");
+      }
+    };
+  });
+
+  el("gcd-solve").click();
+  el("inv-solve").click();
+  exampleCrt();
+})();
+</script>
+</body>
+</html>
