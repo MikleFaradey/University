@@ -67,7 +67,7 @@
 
   <section class="panel active" id="panel-gcd">
     <div class="card">
-      <h2>НОД и коэффициенты Безу</h2>
+      <h2>НОД, НОК и коэффициенты Безу</h2>
       <p class="hint">Введите два целых числа.</p>
       <div class="grid two">
         <label>n₁<input id="gcd-a" inputmode="numeric" value="423536"></label>
@@ -236,7 +236,9 @@
     if(n1===0n&&n2===0n) throw new Error("НОД(0, 0) не определён.");
     if(n1===0n||n2===0n){
       var gg=n1===0n?abs(n2):abs(n1);
-      return "НОД("+n1+", "+n2+") = "+gg;
+      var ll0=0n;
+      return "НОД("+n1+", "+n2+") = "+gg+"\n"+
+             "НОК("+n1+", "+n2+") = |"+n1+"·"+n2+"| / "+gg+" = "+ll0;
     }
     var a=abs(n1),b=abs(n2),sw=false;
     if(a<b){var z=a;a=b;b=z;sw=true;}
@@ -265,10 +267,20 @@
     L.push("------------------------------------------------------");
     L.push(back.g+" = ("+c1+")·"+n1+" + ("+c2+")·"+n2);
     L.push("Проверка: "+(c1*n1+c2*n2));
+
+    var lcm=abs(n1*n2)/back.g;
+    L.push("");
+    L.push("4. Находим НОК");
+    L.push("------------------------------------------------------");
+    L.push("НОК("+n1+", "+n2+") = |"+n1+"·"+n2+"| / НОД("+n1+", "+n2+")");
+    L.push("НОК("+n1+", "+n2+") = |"+(n1*n2)+"| / "+back.g);
+    L.push("НОК("+n1+", "+n2+") = "+lcm);
+
     L.push("");
     L.push("ОТВЕТ");
     L.push("======================================================");
     L.push("НОД("+n1+", "+n2+") = "+back.g);
+    L.push("НОК("+n1+", "+n2+") = "+lcm);
     L.push(back.g+" = ("+c1+")·"+n1+" + ("+c2+")·"+n2);
     return L.join("\n");
   }
