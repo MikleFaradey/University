@@ -1,0 +1,19 @@
+test_concurrent_transfers (test_security.SecurityTests.test_concurrent_transfers) ... ok
+test_idor_and_admin (test_security.SecurityTests.test_idor_and_admin) ... ok
+test_invalid_amounts (test_security.SecurityTests.test_invalid_amounts) ... ok
+test_json_tampering_ignored (test_security.SecurityTests.test_json_tampering_ignored) ... ok
+test_login_and_injection (test_security.SecurityTests.test_login_and_injection) ... ok
+test_old_transfer_requires_request_id (test_security.SecurityTests.test_old_transfer_requires_request_id) ... ok
+test_password_storage (test_security.SecurityTests.test_password_storage) ... ok
+test_rate_limit_across_connections (test_security.SecurityTests.test_rate_limit_across_connections) ... ok
+test_replay_survives_restart (test_security.SecurityTests.test_replay_survives_restart) ... ok
+test_rollback (test_security.SecurityTests.test_rollback) ... ok
+test_self_transfer (test_security.SecurityTests.test_self_transfer) ... ok
+test_size_and_encoding (test_security.SecurityTests.test_size_and_encoding) ... ok
+test_slowloris_deadline (test_security.SecurityTests.test_slowloris_deadline) ... ok
+test_tcp_framing (test_security.SecurityTests.test_tcp_framing) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 1.531s
+
+OK
