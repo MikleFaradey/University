@@ -1,5 +1,6 @@
 import concurrent.futures
 import json
+import os
 from pathlib import Path
 import secrets
 import socket
@@ -105,6 +106,8 @@ class SecurityTests(unittest.TestCase):
         (self.path.parent / 'bank_db.json').write_text(json.dumps({'users': [{'balance': 999999999}]}))
         restarted = main.Bank(self.path)
         self.assertEqual(restarted.command(2, 'BALANCE')[1], 'OK|5000.00')
+    @unittest.skipUnless(os.name == 'posix', 'POSIX permissions are not supported on Windows')
+    def test_database_file_permissions(self):
         self.assertEqual(self.path.stat().st_mode & 0o777, 0o600)
 
     def test_tcp_framing(self):
