@@ -1,4 +1,4 @@
-FROM python:3.12-slim-bookworm
+FROM python@sha256:5d9e6adc9abd558bc0ce05f9ab16cef71328916fc9728f6b81e337af86a737e2
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 BANK_HOST=0.0.0.0 BANK_DB=/app/data/bank.sqlite3
 WORKDIR /app
 RUN groupadd --gid 10001 bank && useradd --uid 10001 --gid bank --no-create-home bank \

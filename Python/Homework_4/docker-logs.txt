@@ -1,0 +1,24 @@
+﻿bank-1  | 2026-10-21 07:53:58,467 INFO TLS bank ready port=9999
+bank-1  | 2026-10-21 07:54:02,854 INFO TLS connection rejected
+bank-1  | 2026-10-21 07:54:33,012 INFO TLS connection rejected
+bank-1  | 2026-10-21 07:54:57,826 INFO connection closed or invalid frame
+bank-1  | 2026-10-21 07:55:03,140 INFO TLS connection rejected
+bank-1  | 2026-10-21 07:55:24,390 INFO login result=success
+bank-1  | 2026-10-21 07:55:24,390 INFO request uid=2 result=OK
+bank-1  | 2026-10-21 07:55:24,392 INFO request uid=2 result=OK
+bank-1  | 2026-10-21 07:55:33,258 INFO TLS connection rejected
+bank-1  | 2026-10-21 07:55:33,338 INFO request uid=2 result=OK
+bank-1  | 2026-10-21 07:55:33,349 INFO transfer committed uid=2 tx=1
+bank-1  | 2026-10-21 07:55:33,349 INFO request uid=2 result=OK
+bank-1  | 2026-10-21 07:55:33,351 INFO request uid=2 result=OK
+bank-1  | 2026-10-21 07:55:33,352 INFO request uid=2 result=OK
+bank-1  | 2026-10-21 07:55:33,354 INFO request uid=2 result=OK
+bank-1  | 2026-10-21 07:55:33,355 INFO request uid=2 result=OK
+bank-1  | 2026-10-21 07:55:33,356 INFO request uid=2 result=ERR
+bank-1  | 2026-10-21 07:55:37,256 INFO request uid=2 result=BYE
+bank-1  | 2026-10-21 07:56:03,389 INFO TLS connection rejected
+bank-1  | 2026-10-21 07:56:33,527 INFO TLS connection rejected
+bank-1  | 2026-10-21 07:57:03,674 INFO TLS connection rejected
+bank-1  | 2026-10-21 07:57:33,782 INFO TLS connection rejected
+bank-1  | 2026-10-21 07:58:03,926 INFO TLS connection rejected
+bank-1  | 2026-10-21 07:58:34,051 INFO TLS connection rejected

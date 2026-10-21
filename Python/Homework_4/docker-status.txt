@@ -1,0 +1,2 @@
+﻿NAME                IMAGE             COMMAND            SERVICE   CREATED         STATUS                   PORTS
+homework_4-bank-1   homework_4-bank   "python main.py"   bank      4 minutes ago   Up 4 minutes (healthy)   127.0.0.1:9999->9999/tcp
