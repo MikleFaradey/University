@@ -1,12 +1,5 @@
-﻿py : test_concurrent_transfers (test_security.SecurityTests.test_concurrent_transfers) ... ok
-строка:1 знак:1
-+ py -m unittest -v test_security 2>&1 | Out-File -Encoding utf8 test-r ...
-+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: (test_concurrent...ansfers) ... ok:String) [], RemoteException
-    + FullyQualifiedErrorId : NativeCommandError
- 
-test_database_file_permissions (test_security.SecurityTests.test_database_file_permissions) ... skipped 'POSIX permissi
-ons are not supported on Windows'
+test_concurrent_transfers (test_security.SecurityTests.test_concurrent_transfers) ... ok
+test_database_file_permissions (test_security.SecurityTests.test_database_file_permissions) ... skipped 'POSIX permissions are not supported on Windows'
 test_idor_and_admin (test_security.SecurityTests.test_idor_and_admin) ... ok
 test_invalid_amounts (test_security.SecurityTests.test_invalid_amounts) ... ok
 test_json_tampering_ignored (test_security.SecurityTests.test_json_tampering_ignored) ... ok
@@ -22,6 +15,6 @@ test_slowloris_deadline (test_security.SecurityTests.test_slowloris_deadline) ..
 test_tcp_framing (test_security.SecurityTests.test_tcp_framing) ... ok
 
 ----------------------------------------------------------------------
-Ran 15 tests in 2.578s
+Ran 15 tests in 2.782s
 
 OK (skipped=1)
