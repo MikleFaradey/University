@@ -4,3 +4,4 @@ __pycache__/
 semgrep-rules/
 semgrep-report.json
 .venv/
+defense-results/
