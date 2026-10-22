@@ -17,7 +17,7 @@ from decimal import Decimal
 
 LOG = logging.getLogger("bank")
 MAX_LINE = 2048
-COMMAND_TIMEOUT = 10
+COMMAND_TIMEOUT = 60
 MAX_CONNECTIONS = 32
 MAX_BALANCE = 100_000_000_000  # копейки
 LOGIN_RE = re.compile(r"[a-zA-Z0-9_]{1,32}\Z")
