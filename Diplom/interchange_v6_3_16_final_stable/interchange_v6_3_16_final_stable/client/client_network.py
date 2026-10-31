@@ -977,7 +977,13 @@ class ClientNetwork(QObject):
             return False
         if not path.exists():
             self.user_error.emit("File or folder not found")
-            return
+            if not quiet and transfer_key:
+                self.transfer_event.emit({
+                    "key": transfer_key, "name": path.name,
+                    "peer": recipient, "direction": "outgoing",
+                    "status": "error", "percent": 0,
+                })
+            return False
 
         tmp_zip = None
         try:
