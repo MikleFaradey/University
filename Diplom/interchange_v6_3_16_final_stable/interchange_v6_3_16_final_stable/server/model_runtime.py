@@ -24,6 +24,7 @@ class ModelManager(object):
         self._feature_names = []
         self._classes = []
         self._class_names = None
+        self._algorithm = None
         self._loaded_at = None
         self._error = None
         self._latest = {}
@@ -178,6 +179,10 @@ class ModelManager(object):
         with self._lock:
             self._model = model
             self._path = str(model_path)
+            self._algorithm = (
+                str(loaded.get("algorithm")) if isinstance(loaded, dict)
+                and loaded.get("algorithm") else type(model).__name__
+            )
             self._feature_names = list(feature_names)
             self._classes = display_classes
             self._class_names = package_class_names
@@ -203,6 +208,7 @@ class ModelManager(object):
             self._feature_names = []
             self._classes = []
             self._class_names = None
+            self._algorithm = None
             self._loaded_at = None
             self._error = None
             self._latest.clear()
@@ -225,6 +231,7 @@ class ModelManager(object):
                 "loaded": self._model is not None,
                 "path": self._path,
                 "file_name": Path(self._path).name if self._path else None,
+                "algorithm": self._algorithm,
                 "loaded_at": self._loaded_at,
                 "feature_count": len(self._feature_names),
                 "feature_names": list(self._feature_names),
