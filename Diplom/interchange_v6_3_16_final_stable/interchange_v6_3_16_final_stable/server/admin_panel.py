@@ -1887,6 +1887,7 @@ class AdminWindow(QMainWindow):
 
 def parse_args():
     p = argparse.ArgumentParser(description="Interchange Admin Panel")
+    p.add_argument("--self-test", action="store_true", help="Validate packaged admin dependencies and exit")
     p.add_argument("--server-config", default=None)
     p.add_argument("--db", default=None)
     p.add_argument("--server-url", default=None)
@@ -1895,6 +1896,11 @@ def parse_args():
 
 def main():
     args = parse_args()
+    if args.self_test:
+        from qt_compat import QApplication
+        from db import init_db
+        print("Interchange Admin self-test: OK")
+        return 0
     config_path = Path(args.server_config or default_config_path()).expanduser()
     server_values = load_server_config(config_path)
 
