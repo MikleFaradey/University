@@ -15,6 +15,7 @@ import db
 from server_core import RealtimeHub
 from pcap_manager import PcapCaptureError, PcapManager
 from model_runtime import ModelLoadError, ModelManager
+from ml.training_jobs import TrainingJobManager, TrainingBusyError
 from live_monitor import LiveTrafficMonitor
 from model_test import ModelTestManager
 from transfer_utils import CHUNK_SIZE, make_folder_zip, safe_extract, sha256_file
@@ -30,6 +31,7 @@ APP = {
     "events": None,
     "pcap": None,
     "model_manager": None,
+    "training_manager": None,
     "traffic_monitor": None,
     "model_test_manager": None,
     "experiment_lock": threading.RLock(),
@@ -70,6 +72,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.handle_users()
         if parsed.path == "/admin/model/monitor":
             return self.handle_admin_model_monitor()
+        if parsed.path == "/admin/model/train/status":
+            return self.handle_admin_model_train_status()
         if parsed.path == "/admin/model/client":
             return self.handle_admin_model_client(q)
         if parsed.path == "/admin/model/test/status":
@@ -98,6 +102,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.handle_admin_experiment_delete()
         if parsed.path == "/admin/model/load":
             return self.handle_admin_model_load()
+        if parsed.path == "/admin/model/train/start":
+            return self.handle_admin_model_train_start()
         if parsed.path == "/admin/model/unload":
             return self.handle_admin_model_unload()
         if parsed.path == "/admin/model/test/start":
@@ -461,6 +467,35 @@ class Handler(BaseHTTPRequestHandler):
                 self, {"error": "live model monitor is not initialized"}, 503
             )
         return json_response(self, monitor.client_details(user_id))
+
+    def handle_admin_model_train_status(self):
+        if not self._is_local_admin():
+            return json_response(self, {"error": "local admin only"}, 403)
+        manager = APP.get("training_manager")
+        if manager is None:
+            return json_response(self, {"error": "training unavailable"}, 503)
+        return json_response(self, manager.snapshot())
+
+    def handle_admin_model_train_start(self):
+        if not self._is_local_admin():
+            return json_response(self, {"error": "local admin only"}, 403)
+        manager = APP.get("training_manager")
+        if manager is None:
+            return json_response(self, {"error": "training unavailable"}, 503)
+        try:
+            data = self._read_json_body()
+            job = manager.start(
+                data.get("dataset"),
+                data.get("output_dir"),
+                algorithms=data.get("algorithms"),
+                test_size=data.get("test_size", 0.20),
+                random_state=data.get("random_state", 42),
+            )
+            return json_response(self, job, 202)
+        except TrainingBusyError as exc:
+            return json_response(self, {"error": str(exc)}, 409)
+        except (ValueError, TypeError) as exc:
+            return json_response(self, {"error": str(exc)}, 400)
 
     def handle_admin_model_load(self):
         if not self._is_local_admin():
@@ -1640,6 +1675,7 @@ def main():
         socket_port=int(values["socket_port"])
     )
     APP["model_manager"] = ModelManager(history_seconds=60)
+    APP["training_manager"] = TrainingJobManager()
 
     hub = RealtimeHub(
         port=int(values["socket_port"]), event_queue=APP["events"]
