@@ -26,9 +26,9 @@ python3 -c "import requests" >/dev/null 2>&1 || {
     exit 1
 }
 
-python3 -c "import PySide6" >/dev/null 2>&1 || \
-python3 -c "import PySide2" >/dev/null 2>&1 || {
-    echo "ERROR: PySide6 or PySide2 is required on the build Mac"
+python3 -c "from PySide6 import QtCore, QtGui, QtWidgets" >/dev/null 2>&1 || {
+    echo "ERROR: PySide6 is required on the build Mac"
+    echo "Install it with: python3 -m pip install PySide6"
     exit 1
 }
 
@@ -44,6 +44,9 @@ mkdir -p pkgroot/Applications
 mkdir -p pkg_scripts
 
 python3 -m PyInstaller --clean --noconfirm InterchangeClient.spec
+
+# Validate the frozen app and its bundled resources before packaging.
+QT_QPA_PLATFORM=offscreen "dist/Interchange.app/Contents/MacOS/Interchange" --self-test
 
 cp -R "dist/Interchange.app" "pkgroot/Applications/Interchange.app"
 cp preinstall pkg_scripts/preinstall

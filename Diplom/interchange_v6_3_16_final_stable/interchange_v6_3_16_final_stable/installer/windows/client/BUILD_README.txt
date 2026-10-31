@@ -46,3 +46,13 @@ as a custom destination.
 
 After every new install, Interchange behaves like a first installation and
 asks for connection settings again.
+
+QT BINDING POLICY
+
+Frozen Windows/macOS builds use PySide6 only. The spec excludes PyQt5,
+PyQt6 and PySide2 even if they are installed in the build environment.
+The runtime hook selects PySide6 regardless of INTERCHANGE_QT_API inherited
+from the user's shell. Linux DEB packages continue to use system PyQt5.
+The build runs the frozen client's --self-test before creating the installer;
+a failed test stops packaging. Rebuild using the platform build script after
+updating the sources; existing installers are not updated automatically.

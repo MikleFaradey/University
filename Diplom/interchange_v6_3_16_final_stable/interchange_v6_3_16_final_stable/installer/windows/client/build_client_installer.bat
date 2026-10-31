@@ -35,7 +35,7 @@ if errorlevel 1 (
 )
 
 rem Validate the actual frozen executable, including packaged UI resources.
-"%CD%\dist\Interchange\Interchange.exe" --self-test
+start "" /wait "%CD%\dist\Interchange\Interchange.exe" --self-test
 if errorlevel 1 (
     echo ERROR: Frozen client self-test failed.
     echo The build is missing a runtime dependency or UI resource.

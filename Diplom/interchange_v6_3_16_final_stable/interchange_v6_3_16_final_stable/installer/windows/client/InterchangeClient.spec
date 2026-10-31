@@ -15,7 +15,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[str(root / "runtime_user_dir.py")],
-    excludes=[],
+    excludes=["PyQt5", "PyQt6", "PySide2"],
     noarchive=False,
 )
 
