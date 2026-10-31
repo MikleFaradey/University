@@ -43,7 +43,8 @@ class ClientNetwork(QObject):
     message_received = Signal(dict)
     message_sent = Signal(dict)
     history_synced = Signal(str, list)
-    transfer_progress = Signal(str, int)
+    transfer_progress = Signal(str, int)  # retained for older subscribers
+    transfer_event = Signal(dict)  # keyed progress displayed inside the chat
     transfer_status = Signal(dict)
     user_error = Signal(str)
     fatal_error = Signal(str)
@@ -137,11 +138,14 @@ class ClientNetwork(QObject):
         ).start()
 
     def send_path(self, recipient, path):
+        transfer_key = uuid.uuid4().hex
         threading.Thread(
             target=self._upload_path,
             args=(recipient, path),
+            kwargs={"transfer_key": transfer_key},
             daemon=True
         ).start()
+        return transfer_key
 
     def fetch_tasks(self):
         threading.Thread(target=self._fetch_tasks, daemon=True).start()
@@ -967,7 +971,7 @@ class ClientNetwork(QObject):
             self._sync_history(peer)
 
     def _upload_path(self, recipient, path, stop_event=None,
-                     quiet=False, experiment_run_id=None):
+                     quiet=False, experiment_run_id=None, transfer_key=None):
         path = Path(path).expanduser().resolve()
         if stop_event is not None and stop_event.is_set():
             return False
@@ -1000,6 +1004,12 @@ class ClientNetwork(QObject):
                     last_progress_time[0] = now
                     last_progress_percent[0] = percent
                     self.transfer_progress.emit(path.name, percent)
+                    if transfer_key:
+                        self.transfer_event.emit({
+                            "key": transfer_key, "name": path.name,
+                            "peer": recipient, "direction": "outgoing",
+                            "status": "uploading", "percent": percent,
+                        })
 
             def body():
                 nonlocal sent
@@ -1052,7 +1062,14 @@ class ClientNetwork(QObject):
                 return True
 
             emit_progress(100, force=True)
+            if transfer_key:
+                self.transfer_event.emit({
+                    "key": transfer_key, "name": path.name,
+                    "peer": recipient, "direction": "outgoing",
+                    "status": "completed", "percent": 100,
+                })
             self.transfer_status.emit({
+                "transfer_key": transfer_key,
                 "status": data.get("status", "uploaded"),
                 "transfer_id": data.get("transfer_id"),
                 "text": f"{path.name}: sent",
@@ -1071,7 +1088,15 @@ class ClientNetwork(QObject):
             log.exception("Upload failed")
             if quiet:
                 return False
+            if transfer_key:
+                self.transfer_event.emit({
+                    "key": transfer_key, "name": path.name,
+                    "peer": recipient, "direction": "outgoing",
+                    "status": "error",
+                    "percent": max(0, last_progress_percent[0]) if 'last_progress_percent' in locals() else 0,
+                })
             self.transfer_status.emit({
+                "transfer_key": transfer_key,
                 "status": "error",
                 "text": f"{path.name}: send error",
                 "peer": recipient,
@@ -1104,6 +1129,11 @@ class ClientNetwork(QObject):
         item_name = task["item_name"]
         item_type = task["item_type"]
         peer = task["sender_id"]
+        transfer_key = "download:%s" % tid
+        self.transfer_event.emit({
+            "key": transfer_key, "name": item_name, "peer": peer,
+            "direction": "incoming", "status": "downloading", "percent": 0,
+        })
 
         try:
             extra = auth_protocol.canonical_extra([tid])
@@ -1149,6 +1179,11 @@ class ClientNetwork(QObject):
                         last_progress_time = now
                         last_progress_percent = percent
                         self.transfer_progress.emit(item_name, percent)
+                        self.transfer_event.emit({
+                            "key": transfer_key, "name": item_name,
+                            "peer": peer, "direction": "incoming",
+                            "status": "downloading", "percent": percent,
+                        })
 
             if expected and sha256_file(tmp).lower() != expected.lower():
                 safe_unlink(tmp)
@@ -1176,7 +1211,12 @@ class ClientNetwork(QObject):
             data = complete.json()
 
             self.transfer_progress.emit(item_name, 100)
+            self.transfer_event.emit({
+                "key": transfer_key, "name": item_name, "peer": peer,
+                "direction": "incoming", "status": "completed", "percent": 100,
+            })
             self.transfer_status.emit({
+                "transfer_key": transfer_key,
                 "status": "received",
                 "transfer_id": tid,
                 "text": f"{item_name}: received",
@@ -1196,7 +1236,13 @@ class ClientNetwork(QObject):
 
         except Exception:
             log.exception("Download failed")
+            self.transfer_event.emit({
+                "key": transfer_key, "name": item_name, "peer": peer,
+                "direction": "incoming", "status": "error",
+                "percent": max(0, last_progress_percent) if 'last_progress_percent' in locals() else 0,
+            })
             self.transfer_status.emit({
+                "transfer_key": transfer_key,
                 "status": "error",
                 "transfer_id": tid,
                 "text": f"{item_name}: receive error",
