@@ -13,7 +13,7 @@ if not defined PYTHON_CMD (
 
 if not defined PYTHON_CMD (
     echo ERROR: Python 3 was not found.
-    pause
+    if not defined CI pause
     exit /b 1
 )
 
@@ -30,7 +30,7 @@ if exist output rmdir /s /q output
 %PYTHON_CMD% -m PyInstaller --clean --noconfirm InterchangeClient.spec
 if errorlevel 1 (
     echo ERROR: PyInstaller build failed.
-    pause
+    if not defined CI pause
     exit /b 1
 )
 
@@ -39,7 +39,7 @@ start "" /wait "%CD%\dist\Interchange\Interchange.exe" --self-test
 if errorlevel 1 (
     echo ERROR: Frozen client self-test failed.
     echo The build is missing a runtime dependency or UI resource.
-    pause
+    if not defined CI pause
     exit /b 1
 )
 
@@ -54,14 +54,14 @@ if not defined ISCC (
 if not defined ISCC (
     echo ERROR: Inno Setup 6 was not found.
     echo Install Inno Setup 6 and run this script again.
-    pause
+    if not defined CI pause
     exit /b 1
 )
 
 "%ISCC%" InterchangeClient.iss
 if errorlevel 1 (
     echo ERROR: Inno Setup build failed.
-    pause
+    if not defined CI pause
     exit /b 1
 )
 
@@ -69,4 +69,4 @@ echo.
 echo READY:
 echo %CD%\output\InterchangeClientSetup.exe
 echo.
-pause
+if not defined CI pause
