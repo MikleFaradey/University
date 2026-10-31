@@ -118,6 +118,8 @@ class AdminWindow(QMainWindow):
         self.model_timer.timeout.connect(self.refresh_model_monitor)
         self.model_timer.timeout.connect(self.refresh_model_test)
         self.model_timer.start(1000)
+        self.timer.timeout.connect(self.refresh_training_jobs)
+        self.refresh_training_jobs()
         self.refresh_model_monitor()
         self.refresh_model_test()
 
@@ -1038,7 +1040,9 @@ class AdminWindow(QMainWindow):
         self.model_views = QTabWidget()
         self.model_live_page = QWidget()
         self.model_test_page = QWidget()
+        self.model_training_page = QWidget()
         self.model_views.addTab(self.model_live_page, "Live monitoring")
+        self.model_views.addTab(self.model_training_page, "Train & compare")
         self.model_views.addTab(self.model_test_page, "Model test")
         layout.addWidget(self.model_views, 1)
 
@@ -1196,6 +1200,7 @@ class AdminWindow(QMainWindow):
 
         self._model_monitor_data = {}
         self._model_test_data = {}
+        self.build_model_training_page()
         self.refresh_model_test_targets()
         self.load_model_test_example()
 
@@ -1500,6 +1505,219 @@ class AdminWindow(QMainWindow):
         if class_parts:
             text += "\n" + " • ".join(class_parts)
         self.model_test_summary.setText(text)
+
+    def build_model_training_page(self):
+        """Offline training uses the SERVER filesystem and never auto-loads a model."""
+        outer = QVBoxLayout(self.model_training_page)
+        outer.setContentsMargins(0, 0, 0, 0)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        outer.addWidget(scroll)
+        container = QWidget()
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(12)
+        scroll.setWidget(container)
+
+        note = QLabel(
+            "Train and compare algorithms on the same experiment-grouped test "
+            "set. Both paths are on the SERVER computer. A trained model is "
+            "never activated automatically. Keep independent experiments for "
+            "the final unbiased evaluation."
+        )
+        note.setWordWrap(True)
+        note.setObjectName("Hint")
+        layout.addWidget(note)
+
+        settings = QGroupBox("Dataset and training")
+        form = QFormLayout(settings)
+        self.training_dataset = QLineEdit()
+        self.training_dataset.setPlaceholderText(
+            "/path/on/server/dataset/training.csv or dataset folder"
+        )
+        self.training_output = QLineEdit(
+            str(Path.home() / ".interchange" / "models" / "comparison")
+        )
+        self.training_output.setToolTip(
+            "Server-side directory where the models and reports are saved"
+        )
+        form.addRow("Dataset on server:", self.training_dataset)
+        form.addRow("Output on server:", self.training_output)
+
+        algorithms_box = QWidget()
+        algorithm_layout = QVBoxLayout(algorithms_box)
+        algorithm_layout.setContentsMargins(0, 0, 0, 0)
+        algorithm_layout.setSpacing(3)
+        self.training_algorithms = {}
+        for key, name in (
+            ("random_forest", "Random Forest"),
+            ("extra_trees", "Extra Trees"),
+            ("hist_gradient_boosting", "Gradient Boosting"),
+            ("logistic_regression", "Logistic Regression"),
+            ("svm_rbf", "SVM (RBF)"),
+        ):
+            checkbox = QCheckBox(name)
+            checkbox.setChecked(True)
+            self.training_algorithms[key] = checkbox
+            algorithm_layout.addWidget(checkbox)
+        form.addRow("Algorithms:", algorithms_box)
+        self.training_start_btn = QPushButton("Train and compare")
+        self.training_start_btn.clicked.connect(self.start_model_training)
+        form.addRow("", self.training_start_btn)
+        layout.addWidget(settings)
+
+        progress_box = QGroupBox("Training status")
+        progress_layout = QVBoxLayout(progress_box)
+        self.training_progress = QProgressBar()
+        self.training_progress.setRange(0, 100)
+        self.training_progress.setValue(0)
+        self.training_status = QLabel("No training started")
+        self.training_status.setWordWrap(True)
+        self.training_status.setObjectName("Hint")
+        progress_layout.addWidget(self.training_progress)
+        progress_layout.addWidget(self.training_status)
+        layout.addWidget(progress_box)
+
+        results_box = QGroupBox("Compare models (same held-out experiments)")
+        results_layout = QVBoxLayout(results_box)
+        self.training_table = QTableWidget(0, 6)
+        self.training_table.setHorizontalHeaderLabels([
+            "Algorithm", "Macro F1", "Balanced acc.", "Test acc.",
+            "Train acc.", "Model file on server",
+        ])
+        self.training_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.training_table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.training_table.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.training_table.setMinimumHeight(210)
+        header = self.training_table.horizontalHeader()
+        for col in range(5):
+            header.setSectionResizeMode(col, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(5, QHeaderView.Stretch)
+        results_layout.addWidget(self.training_table)
+        self.training_summary = QLabel("No comparison available")
+        self.training_summary.setWordWrap(True)
+        self.training_summary.setObjectName("Hint")
+        results_layout.addWidget(self.training_summary)
+        self.training_load_btn = QPushButton("Load selected model for live monitoring")
+        self.training_load_btn.setEnabled(False)
+        self.training_load_btn.clicked.connect(self.load_selected_trained_model)
+        self.training_table.itemSelectionChanged.connect(
+            self.training_selection_changed
+        )
+        results_layout.addWidget(self.training_load_btn)
+        layout.addWidget(results_box)
+        layout.addStretch(1)
+        self._last_training_display = None
+
+    def training_selection_changed(self):
+        self.training_load_btn.setEnabled(
+            self.training_table.currentRow() >= 0
+        )
+
+    def start_model_training(self):
+        selected = [
+            key for key, checkbox in self.training_algorithms.items()
+            if checkbox.isChecked()
+        ]
+        dataset = self.training_dataset.text().strip()
+        output = self.training_output.text().strip()
+        if not selected or not dataset or not output:
+            self.warn("Select one or more algorithms, dataset and output directory.")
+            return
+        try:
+            response = requests.post(
+                self.args.server_url.rstrip("/") + "/admin/model/train/start",
+                json={
+                    "dataset": dataset,
+                    "output_dir": output,
+                    "algorithms": selected,
+                    "test_size": 0.20,
+                    "random_state": 42,
+                },
+                timeout=8,
+            )
+            data = response.json()
+            if response.status_code >= 400:
+                raise RuntimeError(data.get("error", "Cannot start training"))
+        except Exception as exc:
+            self.warn(str(exc))
+            return
+        self._last_training_display = None
+        self.refresh_training_jobs()
+
+    def refresh_training_jobs(self):
+        if not hasattr(self, "training_table"):
+            return
+        try:
+            response = requests.get(
+                self.args.server_url.rstrip("/") + "/admin/model/train/status",
+                timeout=1.5,
+            )
+            data = response.json()
+            if response.status_code >= 400:
+                raise RuntimeError(data.get("error", "Training status unavailable"))
+        except Exception:
+            self.training_status.setText("Server training status unavailable")
+            return
+
+        state = str(data.get("state", "idle"))
+        percent = max(0, min(100, int(data.get("progress") or 0)))
+        self.training_progress.setValue(percent)
+        self.training_status.setText(
+            "%s · %s" % (state.capitalize(), data.get("message") or "")
+        )
+        self.training_start_btn.setEnabled(state not in ("running", "queued"))
+        results = data.get("results") or []
+        summary = data.get("summary") or {}
+        signature = (data.get("id"), state, len(results))
+        if signature == self._last_training_display:
+            return
+        self._last_training_display = signature
+        self.training_table.setRowCount(len(results))
+        for row_index, result in enumerate(results):
+            values = [
+                result.get("name") or result.get("algorithm", ""),
+                "%.3f" % float(result.get("macro_f1", 0)),
+                "%.3f" % float(result.get("balanced_accuracy", 0)),
+                "%.3f" % float(result.get("test_accuracy", 0)),
+                "%.3f" % float(result.get("train_accuracy", 0)),
+                str(result.get("model_path", "")),
+            ]
+            for col, value in enumerate(values):
+                self.training_table.setItem(
+                    row_index, col, QTableWidgetItem(str(value))
+                )
+        self.training_table.clearSelection()
+        self.training_load_btn.setEnabled(False)
+        if summary:
+            self.training_summary.setText(
+                "Top by holdout macro F1: %s. Report: %s. "
+                "The reported score is for comparison, not a final "
+                "unbiased estimate after model selection."
+                % (summary.get("recommended_algorithm"),
+                   summary.get("summary_path", ""))
+            )
+        elif state == "error":
+            self.training_summary.setText("Training failed: %s" % data.get("message"))
+        elif not results:
+            self.training_summary.setText("No comparison available")
+        else:
+            self.training_summary.setText(
+                "%d algorithm(s) trained; waiting for remaining results."
+                % len(results)
+            )
+
+    def load_selected_trained_model(self):
+        row = self.training_table.currentRow()
+        if row < 0:
+            self.warn("Select a trained model in the results table.")
+            return
+        cell = self.training_table.item(row, 5)
+        if cell is None or not cell.text().strip():
+            self.warn("Model file is unavailable.")
+            return
+        self.model_path.setText(cell.text().strip())
+        self.load_model_file()
 
     def browse_model_file(self):
         path, selected_filter = QFileDialog.getOpenFileName(
