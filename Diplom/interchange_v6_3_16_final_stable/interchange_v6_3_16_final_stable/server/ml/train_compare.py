@@ -12,12 +12,21 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from train_random_forest import (
+try:
+    from .train_random_forest import (
     FEATURE_COLUMNS, FIXED_WINDOW_SEC, DATASET_SCHEMA_VERSION,
     _json_safe, _load_ml_dependencies, dataset_fingerprint,
     feature_schema_fingerprint, load_dataset, make_grouped_split,
-    save_confusion_csv, validate_dataset,
-)
+        save_confusion_csv, validate_dataset,
+    )
+except ImportError:
+    # Direct command-line execution: python server/ml/train_compare.py
+    from train_random_forest import (
+        FEATURE_COLUMNS, FIXED_WINDOW_SEC, DATASET_SCHEMA_VERSION,
+        _json_safe, _load_ml_dependencies, dataset_fingerprint,
+        feature_schema_fingerprint, load_dataset, make_grouped_split,
+        save_confusion_csv, validate_dataset,
+    )
 
 ALGORITHMS = (
     "random_forest",
