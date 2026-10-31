@@ -1547,6 +1547,7 @@ def run_gui(config_path, app=None):
 
 def parse_args():
     p = argparse.ArgumentParser(description="Interchange Server")
+    p.add_argument("--self-test", action="store_true", help="Validate packaged server dependencies and exit")
     p.add_argument("--config", default=None)
     p.add_argument("--port", type=int, default=None)
     p.add_argument("--socket-port", type=int, default=None)
@@ -1588,6 +1589,17 @@ def main():
         )
 
     cli_args = parse_args()
+    if cli_args.self_test:
+        import joblib
+        import sklearn
+        import scapy.all
+        from qt_compat import QApplication
+        from server_setup import ServerSetupDialog
+        bundle_root = Path(getattr(__import__("sys"), "_MEIPASS", Path(__file__).parent))
+        if not (bundle_root / "assets" / "interchange_logo.png").is_file():
+            raise RuntimeError("Server bundle is missing its logo")
+        print("Interchange Server self-test: OK")
+        return 0
     config_path = Path(cli_args.config or default_config_path()).expanduser()
     values = resolve_settings(cli_args, load_server_config(config_path))
 
