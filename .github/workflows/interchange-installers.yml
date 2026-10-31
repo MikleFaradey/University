@@ -30,7 +30,9 @@ jobs:
         working-directory: Diplom/interchange_v6_3_16_final_stable/interchange_v6_3_16_final_stable
         env:
           QT_QPA_PLATFORM: offscreen
-        run: python tests/smoke_regressions.py
+        run: |
+          python tests/smoke_regressions.py
+          python tests/test_multi_algorithm_training.py
 
   linux-deb:
     runs-on: ubuntu-24.04
