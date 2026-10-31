@@ -690,6 +690,37 @@ def test_setup_switch_confirmation_guards_destructive_reset():
     assert 'self._reset_for_new_account()' in prep
 
 
+
+def test_in_chat_transfer_progress_contract():
+    gui = (ROOT / 'client' / 'client_gui.py').read_text(encoding='utf-8')
+    net = (ROOT / 'client' / 'client_network.py').read_text(encoding='utf-8')
+    assert 'transfer_event = Signal(dict)' in net
+    assert 'transfer_key = uuid.uuid4().hex' in net
+    assert '"download:%s" % tid' in net
+    assert 'self.net.transfer_event.connect(self.on_transfer_update)' in gui
+    assert 'QProgressBar#BubbleProgress' in gui
+    assert 'QProgressBar#TransferProgress' not in gui
+    assert 'self.transfers = {}' in gui
+    assert 'self.transfer_widgets = {}' in gui
+    assert 'self.transfer_widgets[key] = widget' in gui
+
+
+def test_server_admin_packaging_contract():
+    packaging = ROOT / 'installer'
+    for role in ('server', 'admin'):
+        title = 'Server' if role == 'server' else 'Admin'
+        for system in ('macos', 'windows'):
+            spec = (packaging / system / role / ('Interchange%s.spec' % title)).read_text(encoding='utf-8')
+            assert 'excludes=["PyQt5", "PyQt6", "PySide2"]' in spec
+            assert 'runtime_user_dir.py' in spec
+        assert (packaging / 'linux' / role / ('build_%s_deb.sh' % role)).exists()
+        assert (packaging / 'windows' / role / ('build_%s_installer.bat' % role)).exists()
+        assert (packaging / 'macos' / role / ('build_%s_pkg.command' % role)).exists()
+    assert 'dpkg-deb --root-owner-group' in (
+        packaging / 'linux' / 'build_role_deb.sh'
+    ).read_text(encoding='utf-8')
+
+
 if __name__ == '__main__':
     test_pcap_dumpcap_interface_parsing()
     test_one_second_metric_math()
@@ -714,4 +745,6 @@ if __name__ == '__main__':
     test_client_account_switch_no_is_side_effect_free_by_construction()
     test_setup_switch_confirmation_guards_destructive_reset()
     test_python37_syntax()
+    test_in_chat_transfer_progress_contract()
+    test_server_admin_packaging_contract()
     print('OK: smoke regressions passed')
