@@ -116,12 +116,10 @@ class ContactWidget(QWidget):
 
 
 class MessageBubble(QWidget):
-    """
-    Layout rule:
-    - own messages are on the left;
-    - peer messages are on the right.
-    """
-    def __init__(self, text, time_text, own=False, file_status=False, parent=None):
+    """A chat message with optional live, in-bubble transfer progress."""
+
+    def __init__(self, text, time_text, own=False, file_status=False,
+                 transfer=None, parent=None):
         QWidget.__init__(self, parent)
         row = QHBoxLayout(self)
         row.setContentsMargins(10, 4, 10, 4)
@@ -130,31 +128,61 @@ class MessageBubble(QWidget):
         bubble = QFrame()
         bubble.setObjectName("OwnBubble" if own else "PeerBubble")
         bubble.setMaximumWidth(520)
-
         inner = QVBoxLayout(bubble)
         inner.setContentsMargins(14, 10, 14, 9)
         inner.setSpacing(6)
 
-        label = QLabel(text)
+        label = QLabel(("📎 " if file_status else "") + text)
         label.setObjectName("FileText" if file_status else "MessageText")
         label.setWordWrap(True)
         label.setTextInteractionFlags(Qt.TextSelectableByMouse)
         inner.addWidget(label)
 
+        self.transfer_bar = None
+        if transfer is not None:
+            self.transfer_caption = QLabel()
+            self.transfer_caption.setObjectName("TransferState")
+            inner.addWidget(self.transfer_caption)
+            self.transfer_bar = QProgressBar()
+            self.transfer_bar.setObjectName("BubbleProgress")
+            self.transfer_bar.setRange(0, 100)
+            self.transfer_bar.setTextVisible(False)
+            self.transfer_bar.setMinimumWidth(230)
+            inner.addWidget(self.transfer_bar)
+            self.update_transfer(transfer)
+
         stamp = QLabel(time_text)
         stamp.setObjectName("MessageTime")
-        if own:
-            stamp.setAlignment(Qt.AlignLeft)
-        else:
-            stamp.setAlignment(Qt.AlignRight)
+        stamp.setAlignment(Qt.AlignRight if own else Qt.AlignLeft)
         inner.addWidget(stamp)
 
         if own:
-            row.addWidget(bubble, 0, Qt.AlignLeft)
-            row.addStretch(1)
-        else:
             row.addStretch(1)
             row.addWidget(bubble, 0, Qt.AlignRight)
+        else:
+            row.addWidget(bubble, 0, Qt.AlignLeft)
+            row.addStretch(1)
+
+    def update_transfer(self, transfer):
+        if self.transfer_bar is None:
+            return
+        percent = max(0, min(100, int(transfer.get("percent", 0))))
+        state = transfer.get("status", "preparing")
+        title = {
+            "preparing": "Preparing",
+            "uploading": "Sending",
+            "downloading": "Receiving",
+            "completed": "Completed",
+            "error": "Transfer failed",
+        }.get(state, "Transferring")
+        self.transfer_caption.setText(
+            title if state == "error" else "%s · %s%%" % (title, percent)
+        )
+        self.transfer_bar.setValue(percent)
+        self.transfer_bar.setProperty("failed", state == "error")
+        self.transfer_bar.style().unpolish(self.transfer_bar)
+        self.transfer_bar.style().polish(self.transfer_bar)
+
 
 
 class MainWindow(QMainWindow):
@@ -166,7 +194,8 @@ class MainWindow(QMainWindow):
         self.online_map = {}
         self.connected = False
         self.current_peer = None
-        self.current_progress_name = None
+        self.transfers = {}
+        self.transfer_widgets = {}
         self._reauth_in_progress = False
         self._experiment_active = False
         self._experiment_label = ""
@@ -300,15 +329,6 @@ class MainWindow(QMainWindow):
         composer_outer.setSpacing(6)
 
 
-        self.progress_bar = QProgressBar()
-        self.progress_bar.setObjectName("TransferProgress")
-        self.progress_bar.setRange(0, 100)
-        self.progress_bar.setValue(0)
-        self.progress_bar.setTextVisible(True)
-        self.progress_bar.setFormat(u"%p%")
-        self.progress_bar.setVisible(False)
-        composer_outer.addWidget(self.progress_bar)
-
         composer = QFrame()
         composer.setObjectName("Composer")
         composer_row = QHBoxLayout(composer)
@@ -368,7 +388,7 @@ class MainWindow(QMainWindow):
         self.net.message_received.connect(self.on_message_received)
         self.net.message_sent.connect(self.on_message_sent)
         self.net.history_synced.connect(self.on_history_synced)
-        self.net.transfer_progress.connect(self.on_transfer_progress)
+        self.net.transfer_event.connect(self.on_transfer_update)
         self.net.transfer_status.connect(self.on_transfer_status)
         self.net.user_error.connect(self.on_error)
         self.net.fatal_error.connect(self.on_fatal_error)
@@ -503,19 +523,23 @@ class MainWindow(QMainWindow):
                 background: #FFFFFF;
                 border-top: 1px solid #E5EAF0;
             }
-            QProgressBar#TransferProgress {
-                background: #E9EEF5;
-                border: 1px solid #D6DEE8;
-                border-radius: 7px;
-                height: 16px;
-                text-align: center;
-                color: #172033;
-                font-size: 11px;
-                font-weight: 700;
+            QLabel#TransferState {
+                color: #64748B;
+                font-size: 12px;
             }
-            QProgressBar#TransferProgress::chunk {
-                background: #2563EB;
-                border-radius: 6px;
+            QProgressBar#BubbleProgress {
+                background: #E2E8F0;
+                border: none;
+                border-radius: 3px;
+                min-height: 6px;
+                max-height: 6px;
+            }
+            QProgressBar#BubbleProgress::chunk {
+                background: #3B82F6;
+                border-radius: 3px;
+            }
+            QProgressBar#BubbleProgress[failed="true"]::chunk {
+                background: #DC2626;
             }
             QFrame#Composer {
                 background: #F7F9FC;
@@ -706,6 +730,7 @@ class MainWindow(QMainWindow):
 
     def render_cached_chat(self):
         self.chat.clear()
+        self.transfer_widgets.clear()
         if not self.current_peer:
             return
         rows = self.cache.get_messages(self.current_peer)
@@ -722,6 +747,20 @@ class MainWindow(QMainWindow):
             item.setSizeHint(widget.sizeHint())
             self.chat.addItem(item)
             self.chat.setItemWidget(item, widget)
+        for key, transfer in self.transfers.items():
+            if transfer.get("peer") != self.current_peer:
+                continue
+            widget = MessageBubble(
+                transfer.get("name", "File"),
+                datetime.now().strftime("%H:%M"),
+                own=transfer.get("direction") != "incoming",
+                file_status=True, transfer=transfer,
+            )
+            item = QListWidgetItem()
+            item.setSizeHint(widget.sizeHint())
+            self.chat.addItem(item)
+            self.chat.setItemWidget(item, widget)
+            self.transfer_widgets[key] = widget
         if self.chat.count() > 0:
             self.chat.scrollToBottom()
 
@@ -803,8 +842,8 @@ class MainWindow(QMainWindow):
             return
         path = QFileDialog.getOpenFileName(self, u"Select file")[0]
         if path:
-            self.prepare_progress(Path(path).name, u"Sending file...")
-            self.net.send_path(self.current_peer, path)
+            key = self.net.send_path(self.current_peer, path)
+            self.prepare_progress(key, Path(path).name)
 
     def send_folder(self):
         if not self.connected:
@@ -814,76 +853,59 @@ class MainWindow(QMainWindow):
             return
         path = QFileDialog.getExistingDirectory(self, u"Select folder")
         if path:
-            self.prepare_progress(Path(path).name, u"Sending folder...")
-            self.net.send_path(self.current_peer, path)
+            key = self.net.send_path(self.current_peer, path)
+            self.prepare_progress(key, Path(path).name)
 
-    def prepare_progress(self, name, prefix):
-        self.current_progress_name = name
-        self.progress_bar.setToolTip(prefix + u" " + name)
-        self.progress_bar.setValue(0)
-        self.progress_bar.setFormat(name + u" - %p%")
-        self.progress_bar.setVisible(True)
+    def prepare_progress(self, key, name):
+        self.on_transfer_update({
+            "key": key, "name": name, "peer": self.current_peer,
+            "direction": "outgoing", "status": "preparing", "percent": 0,
+        })
 
-    def on_transfer_progress(self, name, percent):
-        self.current_progress_name = name
-        if not self.progress_bar.isVisible():
-            self.progress_bar.setVisible(True)
-        self.progress_bar.setToolTip(name)
-        self.progress_bar.setValue(percent)
-        self.progress_bar.setFormat(name + u" - %p%")
+    def on_transfer_update(self, info):
+        key = info.get("key")
+        if not key:
+            return
+        current = self.transfers.setdefault(key, {})
+        current.update(info)
+        if current.get("peer") == self.current_peer:
+            widget = self.transfer_widgets.get(key)
+            if widget is None:
+                self.schedule_chat_render()
+            else:
+                widget.update_transfer(current)
 
     def on_transfer_status(self, info):
-        text = info.get('text', '')
-        peer = info.get('peer') or self.current_peer
-        status = info.get('status')
-        self.progress_bar.setToolTip(text)
-
-        if status == 'error':
-            if self.current_progress_name:
-                self.progress_bar.setVisible(True)
-            self.progress_bar.setValue(100)
-            self.progress_bar.setFormat(u"Error")
-            QTimer.singleShot(4000, self.hide_progress)
+        text = info.get("text", "")
+        peer = info.get("peer") or self.current_peer
+        if info.get("status") == "error":
+            # Failed transfers remain visible in their chat during this session.
             return
 
-
-        self.progress_bar.setVisible(True)
-        self.progress_bar.setValue(100)
-        self.progress_bar.setFormat(u"Done")
-        QTimer.singleShot(2200, self.hide_progress)
-
+        key = info.get("transfer_key")
+        if key:
+            self.transfers.pop(key, None)
+            self.transfer_widgets.pop(key, None)
         if not peer:
             return
-        created = info.get('created_at') or datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        mid = info.get('message_id')
-        sender = info.get('sender_id')
-        recipient = info.get('recipient_id')
-        direction = info.get('direction')
+        created = info.get("created_at") or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        mid = info.get("message_id")
+        sender = info.get("sender_id")
+        recipient = info.get("recipient_id")
+        direction = info.get("direction")
         if not sender:
-            if direction == 'incoming':
+            if direction == "incoming":
                 sender = peer
                 recipient = self.args.user_id
             else:
                 sender = self.args.user_id
                 recipient = peer
-        role = 'server' if peer == 'server' else 'client'
+        role = "server" if peer == "server" else "client"
         self.cache.upsert_contact(peer, self.contact_name(peer), role)
-        self.cache.add_message(mid, peer, sender, recipient or peer, 'file_status', text, created)
-
-
-
-
+        self.cache.add_message(mid, peer, sender, recipient or peer, "file_status", text, created)
         if peer == self.current_peer:
             self.schedule_chat_render()
-
         self.schedule_contacts_rebuild()
-
-    def hide_progress(self):
-        self.progress_bar.setVisible(False)
-        self.progress_bar.setValue(0)
-        self.progress_bar.setFormat(u"%p%")
-        self.progress_bar.setToolTip("")
-        self.current_progress_name = None
 
     def switch_account(self):
         # Confirmation must be the very first operation. Choosing No must be
