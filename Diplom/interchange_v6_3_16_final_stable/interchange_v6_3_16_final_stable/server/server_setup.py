@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 
 from qt_compat import (
@@ -26,7 +27,7 @@ class ServerSetupDialog(QDialog):
         root.setSpacing(14)
 
         logo = QLabel()
-        logo_path = Path(__file__).parent / "assets" / "interchange_logo.png"
+        logo_path = Path(getattr(sys, "_MEIPASS", Path(__file__).parent)) / "assets" / "interchange_logo.png"
         pixmap = QPixmap(str(logo_path))
         if not pixmap.isNull():
             logo.setPixmap(pixmap.scaledToHeight(46, Qt.SmoothTransformation))
