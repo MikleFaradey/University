@@ -1,0 +1,17 @@
+# Initialization order: storage, APIs, guards, business operations, observers
+modules = ["persistence", "auth", "accounts", "fees", "currency", "limits", "fraud_control", "deposits", "withdrawals", "transfers", "reports", "notifications", "audit_log", "bonus_points", "analytics", "admin"]
+database = "bank.sqlite3"
+# storage_backend = "sqlite" | "memory" | "json"
+storage_backend = "sqlite"
+json_database = "bank.json"
+transfer_fee_basis_points = 100
+daily_limit_cents = 5000000
+monthly_limit_cents = 30000000
+fraud_threshold_cents = 10000000
+single_deposit_limit_cents = 100000000
+notification_channels = ["log", "email", "sms"]
+# Rates: RUB units per 1 unit; educational fixed rates, not market quotes
+[currency_rates]
+RUB = 1
+USD = 90
+EUR = 100

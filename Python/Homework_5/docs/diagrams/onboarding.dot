@@ -1,0 +1,21 @@
+digraph workflow {
+graph [rankdir=LR, bgcolor="white", pad=0.35, nodesep=0.28, ranksep=0.85, label="Регистрация и вход", labelloc=t, fontsize=21, fontname="DejaVu Sans", splines=ortho];
+node [shape=box, style="rounded,filled", color="#C5D2E3", fillcolor="#EDF3FA", fontname="DejaVu Sans", fontsize=12, penwidth=1.1];
+edge [fontname="DejaVu Sans", fontsize=10, color="#52647B", fontcolor="#3C475A"];
+"Клиент" [label="Клиент"];
+"CLI" [label="CLI"];
+"auth" [label="auth"];
+"Repository" [label="Repository"];
+"EventBus" [label="EventBus",fillcolor="#E1EDFF"];
+"audit_log" [label="audit_log"];
+"notifications" [label="notifications"];
+"fraud_control" [label="fraud_control"];
+"Клиент" -> "CLI" [label="register / login",constraint=false];
+"CLI" -> "auth" [label="Проверить поля и пароль",constraint=false];
+"auth" -> "Repository" [label="Создать пользователя / проверить PBKDF2",constraint=false];
+"auth" -> "EventBus" [label="user.registered / user.logged_in",constraint=false];
+"EventBus" -> "audit_log" [label="Зафиксировать событие",constraint=false];
+"EventBus" -> "notifications" [label="Уведомить при регистрации",constraint=false];
+"EventBus" -> "fraud_control" [label="Учесть успешный вход",constraint=false];
+{rank=same; "Клиент"; "CLI"; "auth"; "Repository"; "EventBus"; "audit_log"; "notifications"; "fraud_control";}
+}

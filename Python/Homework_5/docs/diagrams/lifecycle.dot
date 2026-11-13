@@ -1,0 +1,12 @@
+digraph G {
+ graph [bgcolor="white",label="Инициализация и отключение плагинов",labelloc=t,fontname="DejaVu Sans",fontsize=19,pad="0.24"];
+ node [shape=box,style="rounded,filled",color="#A3B8C9",fillcolor="#F2F7FA",fontname="DejaVu Sans"];
+ config [label="config.toml\nсписок modules"];
+ metadata [label="importlib.metadata\nentry_points('bank.modules')"];
+ init [label="initialize(ctx)\nсервисы и подписки"];
+ commands [label="register_commands(registry)\nCLI собирается динамически"];
+ runtime [label="Запуск приложения"];
+ disabled [label="Модуль удалён из config.toml\nего команды не появляются",fillcolor="#E8F5E7"];
+ config -> metadata -> init -> commands -> runtime;
+ config -> disabled [style=dashed];
+}

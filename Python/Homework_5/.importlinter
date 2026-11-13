@@ -1,0 +1,31 @@
+[importlinter]
+root_packages =
+    core
+    bank_modules
+
+[importlinter:contract:core]
+name = Core cannot import bank plugins
+type = forbidden
+source_modules = core
+forbidden_modules = bank_modules
+
+[importlinter:contract:plugins]
+name = Business plugin packages must remain independent
+type = independence
+modules =
+    bank_modules.auth
+    bank_modules.accounts
+    bank_modules.deposits
+    bank_modules.withdrawals
+    bank_modules.transfers
+    bank_modules.reports
+    bank_modules.notifications
+    bank_modules.persistence
+    bank_modules.fees
+    bank_modules.limits
+    bank_modules.fraud_control
+    bank_modules.bonus_points
+    bank_modules.audit_log
+    bank_modules.analytics
+    bank_modules.currency
+    bank_modules.admin

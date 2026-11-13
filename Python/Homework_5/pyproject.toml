@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+[project]
+name = "iu8-modular-bank"
+version = "4.0.0"
+description = "Event-driven modular bank learning project"
+requires-python = ">=3.11"
+dependencies = []
+[project.scripts]
+bank-system = "host.main:main"
+[project.entry-points."bank.modules"]
+persistence = "bank_modules.persistence:Plugin"
+auth = "bank_modules.auth:Plugin"
+accounts = "bank_modules.accounts:Plugin"
+deposits = "bank_modules.deposits:Plugin"
+withdrawals = "bank_modules.withdrawals:Plugin"
+transfers = "bank_modules.transfers:Plugin"
+reports = "bank_modules.reports:Plugin"
+notifications = "bank_modules.notifications:Plugin"
+fees = "bank_modules.fees:Plugin"
+limits = "bank_modules.limits:Plugin"
+fraud_control = "bank_modules.fraud_control:Plugin"
+bonus_points = "bank_modules.bonus_points:Plugin"
+audit_log = "bank_modules.audit_log:Plugin"
+analytics = "bank_modules.analytics:Plugin"
+admin = "bank_modules.admin:Plugin"
+currency = "bank_modules.currency:Plugin"
+[tool.setuptools.packages.find]
+where = ["src"]
