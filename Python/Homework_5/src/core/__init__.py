@@ -1,1 +1,1 @@
-"""Plugin-independent banking core."""
+

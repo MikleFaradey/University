@@ -14,5 +14,8 @@ def cents(value):
 def money(value):
     return str(Decimal(value) / Decimal(100))
 
-def now(): return datetime.now(timezone.utc).isoformat()
-def operation_id(): return uuid.uuid4().hex
+def now():
+    return datetime.now(timezone.utc).isoformat()
+
+def operation_id():
+    return uuid.uuid4().hex
