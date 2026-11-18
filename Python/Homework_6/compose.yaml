@@ -1,0 +1,35 @@
+services:
+  miniapp:
+    build: .
+    command: python miniapp.py
+    environment:
+      ORDERS_URL: http://orders:8000
+      BOT_TOKEN: "${BOT_TOKEN:?Set BOT_TOKEN in .env}"
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate --url http://miniapp:8000
+    depends_on:
+      - miniapp
+  main:
+    build: .
+    command: python main.py
+    ports:
+      - "127.0.0.1:8080:8000"
+    environment:
+      ORDERS_URL: http://orders:8000
+      NAV_URL: http://navigation:8000
+  orders:
+    build: .
+    command: python orders.py
+    environment:
+      DB_PATH: /data/orders.db
+    volumes:
+      - order_data:/data
+  navigation:
+    build: .
+    command: python navigation.py
+    volumes:
+      - street_data:/data
+volumes:
+  order_data:
+  street_data:
