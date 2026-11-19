@@ -1,0 +1,25 @@
+digraph workflow {
+graph [rankdir=LR, bgcolor="white", pad=0.35, nodesep=0.28, ranksep=0.85, label="Отмена завершенной операции", labelloc=t, fontsize=21, fontname="DejaVu Sans", splines=ortho];
+node [shape=box, style="rounded,filled", color="#C5D2E3", fillcolor="#EDF3FA", fontname="DejaVu Sans", fontsize=12, penwidth=1.1];
+edge [fontname="DejaVu Sans", fontsize=10, color="#52647B", fontcolor="#3C475A"];
+"Администратор" [label="Администратор"];
+"reports" [label="reports"];
+"EventBus" [label="EventBus",fillcolor="#E1EDFF"];
+"accounts" [label="accounts"];
+"Repository" [label="Repository"];
+"bonus_points" [label="bonus_points"];
+"notifications" [label="notifications"];
+"audit_log" [label="audit_log"];
+"Администратор" -> "reports" [label="reverse OPERATION_ID REASON",constraint=false];
+"reports" -> "EventBus" [label="operation.reverse.requested",constraint=false];
+"EventBus" -> "accounts" [label="Проверить исходную операцию",constraint=false];
+"accounts" -> "Repository" [label="BEGIN IMMEDIATE",constraint=false];
+"accounts" -> "Repository" [label="Компенсирующие проводки и status=reversed",constraint=false];
+"accounts" -> "Repository" [label="COMMIT или ROLLBACK",constraint=false];
+"reports" -> "EventBus" [label="operation.reversed",constraint=false];
+"EventBus" -> "accounts" [label="Проверить подтвержденный status=reversed",constraint=false];
+"EventBus" -> "bonus_points" [label="Отменить бонусы",constraint=false];
+"EventBus" -> "notifications" [label="Уведомить",constraint=false];
+"EventBus" -> "audit_log" [label="Записать в аудит",constraint=false];
+{rank=same; "Администратор"; "reports"; "EventBus"; "accounts"; "Repository"; "bonus_points"; "notifications"; "audit_log";}
+}

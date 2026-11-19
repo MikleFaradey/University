@@ -1,0 +1,40 @@
+name: IU8 Python Homework 5 and RK 2
+on:
+  push:
+    paths:
+      - 'Python/Homework_5/**'
+      - 'Python/rk_2/**'
+      - '.github/workflows/iu8-python-works.yml'
+  pull_request:
+    paths:
+      - 'Python/Homework_5/**'
+      - 'Python/rk_2/**'
+      - '.github/workflows/iu8-python-works.yml'
+jobs:
+  bank:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Python/Homework_5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e . pytest import-linter
+      - run: lint-imports
+      - run: python -m pytest -q
+      - run: python scripts/run_demo.py
+  rk2:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Python/rk_2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r requirements.txt pytest
+      - run: python scripts_check.py --strict --check-reference
+      - run: python -m pytest -v

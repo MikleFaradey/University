@@ -1,0 +1,59 @@
+Модульный банк. help — команды; quit — выход
+bank> Новый пользователь #1
+bank> Вход: demo_user (роль: client)
+bank> Счёт #1
+bank> Счёт #2
+bank> Операция dee7c10cffc8498cbf9eec3e76f9290b
+bank> 1: current RUB 1000
+2: savings RUB 0
+bank> Операция 4ce838d1f82a48a9895e49e5c02fbf7b
+bank> 798 RUB
+bank> 200 RUB
+bank> Ошибка: Insufficient balance or account unavailable
+bank> 798 RUB
+bank> [
+  {
+    "id": "dee7c10cffc8498cbf9eec3e76f9290b",
+    "kind": "deposit",
+    "src": null,
+    "dst": 1,
+    "amount": 100000,
+    "fee": 0,
+    "received": null,
+    "recipient_ref": null,
+    "ts": "2026-11-19T04:46:25.612417+00:00",
+    "status": "completed"
+  },
+  {
+    "id": "4ce838d1f82a48a9895e49e5c02fbf7b",
+    "kind": "transfer",
+    "src": 1,
+    "dst": 2,
+    "amount": 20000,
+    "fee": 200,
+    "received": null,
+    "recipient_ref": null,
+    "ts": "2026-11-19T04:46:25.625946+00:00",
+    "status": "completed"
+  }
+]
+bank> Бонусы: 12
+bank> [
+  {
+    "category": "Переводы",
+    "kind": "transfer",
+    "count": 1,
+    "amount_cents": 20200
+  }
+]
+bank> [
+  {
+    "id": "4ce838d1f82a48a9895e49e5c02fbf7b",
+    "kind": "transfer",
+    "amount": 20000,
+    "fee": 200,
+    "ts": "2026-11-19T04:46:25.625946+00:00"
+  }
+]
+bank> 
+DEMO PASSED: operations, fees, balances, rejection and CLI parsing

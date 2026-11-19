@@ -1,0 +1,31 @@
+digraph workflow {
+graph [rankdir=LR, bgcolor="white", pad=0.35, nodesep=0.28, ranksep=0.85, label="Перевод между счетами", labelloc=t, fontsize=21, fontname="DejaVu Sans", splines=ortho];
+node [shape=box, style="rounded,filled", color="#C5D2E3", fillcolor="#EDF3FA", fontname="DejaVu Sans", fontsize=12, penwidth=1.1];
+edge [fontname="DejaVu Sans", fontsize=10, color="#52647B", fontcolor="#3C475A"];
+"Клиент" [label="Клиент"];
+"transfers" [label="transfers"];
+"EventBus" [label="EventBus",fillcolor="#E1EDFF"];
+"limits" [label="limits"];
+"fraud_control" [label="fraud_control"];
+"fees" [label="fees"];
+"Repository" [label="Repository"];
+"accounts" [label="accounts"];
+"reports" [label="reports"];
+"bonus_points" [label="bonus_points"];
+"notifications" [label="notifications"];
+"Клиент" -> "transfers" [label="transfer A → B",constraint=false];
+"transfers" -> "EventBus" [label="transfer.requested",constraint=false];
+"EventBus" -> "limits" [label="Проверить лимиты",constraint=false];
+"EventBus" -> "fraud_control" [label="Проверить риск",constraint=false];
+"EventBus" -> "fees" [label="Рассчитать комиссию в payload",constraint=false];
+"transfers" -> "Repository" [label="BEGIN IMMEDIATE",constraint=false];
+"transfers" -> "accounts" [label="debit A: сумма + комиссия",constraint=false];
+"transfers" -> "accounts" [label="credit B: сумма",constraint=false];
+"transfers" -> "Repository" [label="Записать и COMMIT",constraint=false];
+"transfers" -> "EventBus" [label="transfer.completed",constraint=false];
+"EventBus" -> "fees" [label="fee.charged после COMMIT",constraint=false];
+"EventBus" -> "reports" [label="Проекция перевода и комиссии",constraint=false];
+"EventBus" -> "bonus_points" [label="Начислить бонусы",constraint=false];
+"EventBus" -> "notifications" [label="Уведомление",constraint=false];
+{rank=same; "Клиент"; "transfers"; "EventBus"; "limits"; "fraud_control"; "fees"; "Repository"; "accounts"; "reports"; "bonus_points"; "notifications";}
+}

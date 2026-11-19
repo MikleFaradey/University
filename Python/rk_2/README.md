@@ -85,4 +85,36 @@ sequenceDiagram
 
 Запустите приложение и последовательно проверьте: регистрацию двух пользователей, вход и выход, независимость их настроек, изменение фильтров, появление всех четырёх графиков, поиск и скачивание CSV, пустую выборку и сохранение настроек после перезапуска. При удалении одного CSV приложение должно предупредить об отсутствии файла, а не аварийно завершиться. Локальная база `users.sqlite3` и скачанные датасеты не должны публиковаться в GitHub.
 
-В репозитории находятся только файлы, необходимые для запуска, и этот README. Автоматические тесты и отдельные материалы проверки в опубликованный каталог не входят.
+В репозитории также находятся исходные CSV, автоматические тесты, отчёт, матрица соответствия и сценарий записи видео.
+
+## Полная структура для сдачи
+
+```text
+rk_2/
+├── app.py
+├── auth.py
+├── settings.py
+├── analytics.py
+├── charts.py
+├── data.py
+├── fetch_datasets.py
+├── source_reference.py
+├── requirements.txt
+├── README.md
+├── cve_datasets/
+│   ├── cyberattacks_cve_2014.csv
+│   └── ... cyberattacks_cve_2026.csv
+├── tests/
+│   ├── test_data_auth.py
+│   ├── test_regressions.py
+│   ├── test_final_audit.py
+│   └── test_streamlit_app.py
+├── docs/
+│   └── VIDEO_DEMO_PLAN.md
+├── check_macos.sh
+├── scripts_check.py
+├── АУДИТ_СООТВЕТСТВИЯ.md
+└── ОТЧЕТ_РК2_ДЛЯ_СДАЧИ.md
+```
+
+Проверка на macOS: `python -m pip install -r requirements.txt pytest`, `python scripts_check.py --strict --check-reference`, `python -m pytest -v`, затем `python -m streamlit run app.py`. Для сдачи преподавателю нужно самостоятельно записать видеодемонстрацию согласно `docs/VIDEO_DEMO_PLAN.md`.
