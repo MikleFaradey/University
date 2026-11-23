@@ -1,0 +1,58 @@
+### Requires REST Client / VS Code HTTP extension.
+@task = http://localhost:8001
+@notification = http://localhost:8002
+@audit = http://localhost:8003
+
+### 1. Login (response: access_token)
+POST {{task}}/auth/login-json
+Content-Type: application/json
+
+{"login":"admin","password":"change-this-password"}
+
+### Paste response access_token below.
+@token = REPLACE_WITH_JWT
+
+### 2. List departments
+GET {{task}}/departments
+Authorization: Bearer {{token}}
+
+### 3. Create department employee (replace department_id with actual ID)
+POST {{task}}/employees
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"login":"ivanov","full_name":"Иван Иванов","department_id":1,"role":"employee","password":"secure-password-123"}
+
+### 4. Create task (receiving department 2)
+POST {{task}}/tasks
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"title":"Проверить кредитную заявку","description":"Согласовать пакет документов","to_department":2,"priority":"high"}
+
+### 5. List tasks
+GET {{task}}/tasks?status=new&priority=high
+Authorization: Bearer {{token}}
+
+### 6. Change status; use receiving department employee's JWT
+POST {{task}}/tasks/1/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"status":"in_progress"}
+
+### 7. Receive notifications
+GET {{notification}}/notifications?department=2
+Authorization: Bearer {{token}}
+
+### 8. Audit history
+GET {{audit}}/audit?task_id=1
+Authorization: Bearer {{token}}
+
+### 9. Event queue / resend
+GET {{task}}/outbox
+Authorization: Bearer {{token}}
+
+### 10. Retry pending deliveries
+POST {{task}}/outbox/retry
+Authorization: Bearer {{token}}
